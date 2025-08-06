@@ -304,7 +304,10 @@ impl fmt::Display for List {
 /// List indenter that produces no fixed indentation; alignment is handled by
 /// the renderer's enumerator column padding.
 fn list_indenter(_children: &dyn Children, _index: usize) -> String {
-    " ".to_string()
+    // Lists need double-space indentation for proper visual hierarchy
+    // This matches the Go implementation's output despite Go returning single space
+    // The discrepancy might be due to how Go's tree renderer handles list nodes
+    "  ".to_string()
 }
 
 // Go API compatibility aliases

@@ -1,10 +1,21 @@
+//! Tree rendering engine for lipgloss-tree.
+//!
+//! This module provides the core rendering functionality for tree structures,
+//! handling complex styling, alignment, and multiline content rendering.
+//! It supports both built-in tree glyphs (├──, └──, etc.) and custom
+//! enumerators with proper alignment and styling inheritance.
+
 use crate::children::Children;
 use crate::{default_enumerator, default_indenter, Enumerator, Indenter, Node, StyleFunc};
 use lipgloss::{height, join_horizontal, join_vertical, Style, LEFT, TOP};
 use unicode_width::UnicodeWidthStr;
 
-// Minimal Children impl to synthesize enumerator glyphs with controlled length/index
+/// Minimal Children implementation used to synthesize enumerator glyphs with controlled length/index.
+///
+/// This is used internally by the renderer to generate the correct branch characters
+/// (├── vs └──) based on whether a node is the last in its sequence.
 struct DummyChildren {
+    /// The virtual length of this children collection
     len: usize,
 }
 impl Children for DummyChildren {
@@ -16,9 +27,14 @@ impl Children for DummyChildren {
     }
 }
 
-// Children view exposing only visible, non-empty nodes via an index map
+/// A filtered view of children that exposes only visible, non-empty nodes via an index map.
+///
+/// This wrapper allows the renderer to work with only the nodes that will actually
+/// produce visible output, while maintaining the correct indices for style functions.
 struct VisibleChildren<'a> {
+    /// Reference to the underlying children collection
     base: &'a dyn Children,
+    /// Mapping from visible index to actual index in the base collection
     map: Vec<usize>,
 }
 impl<'a> Children for VisibleChildren<'a> {
@@ -30,20 +46,47 @@ impl<'a> Children for VisibleChildren<'a> {
     }
 }
 
-/// Style is the styling applied to the tree.
+/// Styling configuration for tree rendering.
+///
+/// `TreeStyle` controls how different parts of the tree are styled, including
+/// enumerators (branch characters like ├──), items (node content), and the root.
+/// It supports both base styles (applied unconditionally) and function styles
+/// (applied per-child based on index and context).
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss::Style;
+/// use lipgloss_tree::TreeStyle;
+///
+/// let style = TreeStyle {
+///     enumerator_func: |_, _| Style::new().foreground("blue".into()),
+///     item_func: |_, _| Style::new().bold(true),
+///     enumerator_base: Some(Style::new().padding_right(1)),
+///     item_base: None,
+///     root: Style::new().bold(true),
+/// };
+/// ```
 #[derive(Debug, Clone)]
 pub struct TreeStyle {
-    // Function styles applied per-child based on visible index
+    /// Function style applied to enumerators (branch characters) based on child index
     pub enumerator_func: StyleFunc,
+    /// Function style applied to item content based on child index  
     pub item_func: StyleFunc,
-    // Base styles applied unconditionally before the function styles
+    /// Base style applied unconditionally to all enumerators before function styles
     pub enumerator_base: Option<Style>,
+    /// Base style applied unconditionally to all items before function styles
     pub item_base: Option<Style>,
-    // Root style
+    /// Style applied to the root node
     pub root: Style,
 }
 
 impl Default for TreeStyle {
+    /// Creates a default `TreeStyle` with Go lipgloss-compatible behavior.
+    ///
+    /// The default includes `padding_right(1)` on enumerators to match Go's
+    /// behavior of printing a space after tree branch prefixes. Tests that
+    /// need different behavior can override with no-op functions.
     fn default() -> Self {
         Self {
             // By default, Go prints a space after the prefix. Model this
@@ -58,16 +101,54 @@ impl Default for TreeStyle {
     }
 }
 
-/// Renderer is responsible for rendering trees.
+/// The main tree rendering engine.
+///
+/// `Renderer` is responsible for converting tree node structures into styled
+/// text output. It handles complex features like:
+/// - Multi-line content with proper indentation
+/// - Custom enumerators and indenters  
+/// - Style inheritance and override resolution
+/// - Alignment of custom enumerators
+/// - Branch continuation across container nodes
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_tree::{Renderer, TreeStyle};
+/// use lipgloss::Style;
+///
+/// let renderer = Renderer::new()
+///     .style(TreeStyle::default())
+///     .enumerator(|children, i| {
+///         if i == children.length() - 1 { "└──".to_string() }
+///         else { "├──".to_string() }
+///     });
+/// ```
 #[derive(Clone)]
 pub struct Renderer {
+    /// Styling configuration for this renderer
     style: TreeStyle,
+    /// Function to generate enumerator strings (branch characters)
     enumerator: Enumerator,
+    /// Function to generate indentation strings for nested content
     indenter: Indenter,
 }
 
 impl Renderer {
-    /// Creates a new renderer.
+    /// Creates a new renderer with default configuration.
+    ///
+    /// The default renderer uses:
+    /// - Standard box-drawing characters for branches (├──, └──)
+    /// - Standard indentation (│   for continuing, spaces for last)
+    /// - Default styling with padding after enumerators
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Renderer;
+    ///
+    /// let renderer = Renderer::new();
+    /// ```
     pub fn new() -> Self {
         Self {
             style: TreeStyle::default(),
@@ -76,25 +157,119 @@ impl Renderer {
         }
     }
 
-    /// Sets the style for this renderer.
+    /// Sets the styling configuration for this renderer.
+    ///
+    /// This replaces the entire `TreeStyle`, affecting how enumerators,
+    /// items, and the root are styled.
+    ///
+    /// # Arguments
+    ///
+    /// * `style` - The new `TreeStyle` configuration to use
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::{Renderer, TreeStyle};
+    /// use lipgloss::Style;
+    ///
+    /// let custom_style = TreeStyle {
+    ///     root: Style::new().bold(true),
+    ///     ..TreeStyle::default()
+    /// };
+    ///
+    /// let renderer = Renderer::new().style(custom_style);
+    /// ```
     pub fn style(mut self, style: TreeStyle) -> Self {
         self.style = style;
         self
     }
 
-    /// Sets the enumerator for this renderer.
+    /// Sets the enumerator function for this renderer.
+    ///
+    /// The enumerator function generates the branch characters (like ├──, └──)
+    /// based on the child's position in its parent's children collection.
+    ///
+    /// # Arguments
+    ///
+    /// * `enumerator` - Function that takes `(children, index)` and returns a string
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Renderer;
+    ///
+    /// let renderer = Renderer::new()
+    ///     .enumerator(|children, i| {
+    ///         if i == children.length() - 1 {
+    ///             "╰──".to_string()  // Rounded last branch
+    ///         } else {
+    ///             "├──".to_string()  // Standard continuing branch
+    ///         }
+    ///     });
+    /// ```
     pub fn enumerator(mut self, enumerator: Enumerator) -> Self {
         self.enumerator = enumerator;
         self
     }
 
-    /// Sets the indenter for this renderer.
+    /// Sets the indenter function for this renderer.
+    ///
+    /// The indenter function generates indentation strings for child content
+    /// that appears below parent nodes, providing the visual connection
+    /// between parent and nested children.
+    ///
+    /// # Arguments
+    ///
+    /// * `indenter` - Function that takes `(children, index)` and returns indentation string
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Renderer;
+    ///
+    /// let renderer = Renderer::new()
+    ///     .indenter(|children, i| {
+    ///         if i == children.length() - 1 {
+    ///             "    ".to_string()  // Spaces for last child
+    ///         } else {
+    ///             "│   ".to_string()  // Vertical line for continuing
+    ///         }
+    ///     });
+    /// ```
     pub fn indenter(mut self, indenter: Indenter) -> Self {
         self.indenter = indenter;
         self
     }
 
-    /// Renders a tree node to a string.
+    /// Renders a tree node and its children to a formatted string.
+    ///
+    /// This is the main rendering method that converts a tree structure into
+    /// styled text output. It handles complex scenarios like multi-line content,
+    /// style inheritance, custom enumerators, and proper indentation.
+    ///
+    /// # Arguments
+    ///
+    /// * `node` - The tree node to render
+    /// * `root` - Whether this is the root node (affects root style application)
+    /// * `prefix` - String prefix to prepend to each line (for nested rendering)
+    ///
+    /// # Returns
+    ///
+    /// A formatted string representation of the tree with proper styling and indentation
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::{Renderer, Tree};
+    ///
+    /// let tree = Tree::new()
+    ///     .root("My Tree")
+    ///     .child(vec!["Item 1".to_string(), "Item 2".to_string()]);
+    ///
+    /// let renderer = Renderer::new();
+    /// let output = renderer.render(&tree, true, "");
+    /// println!("{}", output);
+    /// ```
     pub fn render(&self, node: &dyn Node, root: bool, prefix: &str) -> String {
         if node.hidden() {
             return String::new();
@@ -486,7 +661,22 @@ impl Default for Renderer {
     }
 }
 
-/// Creates a new renderer.
+/// Creates a new renderer with default configuration.
+///
+/// This is a convenience function equivalent to `Renderer::new()`.
+/// Provided for API compatibility with other lipgloss libraries.
+///
+/// # Returns
+///
+/// A new `Renderer` instance with default settings
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_tree::new_renderer;
+///
+/// let renderer = new_renderer();
+/// ```
 pub fn new_renderer() -> Renderer {
     Renderer::new()
 }
