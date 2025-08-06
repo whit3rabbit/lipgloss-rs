@@ -301,13 +301,32 @@ impl fmt::Display for List {
     }
 }
 
-/// List indenter that produces no fixed indentation; alignment is handled by
-/// the renderer's enumerator column padding.
+/// List indenter for nested content within list items.
+/// 
+/// CRITICAL SPACING REQUIREMENTS:
+/// - Regular sublists MUST have 2-space indentation before bullets
+/// - Example: "• Parent\n  • Child" (2 spaces before child bullet)
+/// - Golden files expect this 2-space pattern for proper visual hierarchy
+///
+/// GO IMPLEMENTATION DISCREPANCY:
+/// - Go's list.New() sets indenter to return single space: `return " "`
+/// - However, Go's output produces 2-space indentation for sublists
+/// - This suggests Go has additional logic that doubles indentation for nested lists
+/// - Our implementation achieves correct output by returning 2 spaces directly
+///
+/// TREE-IN-LIST ISSUE:
+/// - When trees are nested in lists (via item_node), this 2-space indenter
+///   can cause extra spacing after tree symbols
+/// - Tree symbols have padding_right(1) built-in, expecting 1-space list_indenter
+/// - With 2-space list_indenter: tree gets "├──  content" instead of "├── content"
+/// - This affects golden_complex_sublist test specifically
+///
+/// USAGE:
+/// - Called by tree renderer for each child's indentation
+/// - Applied to continuation lines and nested content
+/// - NOT applied to the enumerator/bullet itself
 fn list_indenter(_children: &dyn Children, _index: usize) -> String {
-    // Lists need double-space indentation for proper visual hierarchy
-    // This matches the Go implementation's output despite Go returning single space
-    // The discrepancy might be due to how Go's tree renderer handles list nodes
-    "  ".to_string()
+    "  ".to_string() // 2 spaces required for sublist visual hierarchy
 }
 
 // Go API compatibility aliases

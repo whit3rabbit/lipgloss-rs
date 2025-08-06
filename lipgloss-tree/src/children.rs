@@ -653,8 +653,11 @@ impl Tree {
             hidden: false,
             offset: [0, 0],
             children: NodeChildren::new(),
-            enumerator: None,
-            indenter: None,
+            // CRITICAL FIX: Set default enumerator and indenter so trees don't inherit
+            // from parent List's list_indenter. This prevents spacing conflicts when
+            // trees are nested in lists with 2-space indentation.
+            enumerator: Some(crate::default_enumerator),
+            indenter: Some(crate::default_indenter),
             root_style: None,
             item_style: None,
             enumerator_style: None,

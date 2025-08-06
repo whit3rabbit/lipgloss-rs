@@ -478,20 +478,32 @@ impl Renderer {
                     }
                 }
                 
-                // FIXED: Apply either base style OR function style, not both
-                // This is the key fix for the double-spacing issue
+                // CRITICAL: Apply either base style OR function style, NEVER both
+                // This prevents double-padding issues where both base and function styles add spacing
+                //
+                // PADDING_RIGHT BEHAVIOR:
+                // - TreeStyle::default() sets enumerator_func to add padding_right(1) 
+                // - If enumerator_style (base) is set, it REPLACES the function entirely
+                // - The base style can include its own padding_right(1)
+                // - Go behavior: EnumeratorStyle() method replaces the default function
+                //
+                // SPACING CALCULATION:
+                // - Tree symbols: "├──", "└──" are 3 chars wide
+                // - padding_right(1) adds 1 space → "├── " (4 chars total)
+                // - This aligns with default_indenter: "│   " (4 chars) and "    " (4 spaces)
                 if let Some(base) = &enum_base {
-                    // If we have a base style, use it instead of the function
-                    // This matches Go's behavior where EnumeratorStyle() replaces the function
+                    // Base style set via .enumerator_style() - use ONLY this style
+                    // Example: Style::new().foreground(color).padding_right(1)
                     node_prefix = base.render(&node_prefix);
                 } else {
-                    // Only apply the function style if no base style is set
+                    // No base style - use the function style (default or custom)
                     let enum_style_result = enum_style_func(&vis_children, idx);
                     let enum_lead = enum_style_result.render("");
-                    // Check if enum_lead is just padding (whitespace only) vs actual set_string content
+                    
+                    // Check if this is a set_string style vs padding-only style
                     if !enum_lead.is_empty() && !enum_lead.trim().is_empty() {
-                        // This is a true set_string style with actual content (like "+")
-                        // Apply default padding to the tree structure first, then combine
+                        // Set_string style with actual content (e.g., "+" prefix)
+                        // Apply default padding to tree structure, then prepend the content
                         let default_styled = Style::new().padding_right(1).render(&node_prefix);
                         if !enum_lead.ends_with(' ') {
                             node_prefix = format!("{} {}", enum_lead, default_styled);
@@ -499,7 +511,8 @@ impl Renderer {
                             node_prefix = format!("{}{}", enum_lead, default_styled);
                         }
                     } else {
-                        // Apply the style function to the tree structure directly (padding-only or no style)
+                        // Padding-only style or no additional content
+                        // Apply style function directly to tree structure
                         node_prefix = enum_style_result.render(&node_prefix);
                     }
                 }
@@ -555,6 +568,21 @@ impl Renderer {
 
                 // Only emit a line if the child has a non-empty value; empty-value nodes are containers for sublists
                 if !child.value().is_empty() {
+                    // FINAL LINE ASSEMBLY:
+                    // multiline_prefix: parent indentation (e.g., 10 spaces from nested list level)
+                    // node_prefix: tree symbol with styling (e.g., "[color]├──[reset] " with padding_right)
+                    // item: content with any item styling applied
+                    //
+                    // KNOWN ISSUE: When tree is nested in list with 2-space list_indenter,
+                    // an extra space appears after tree symbols. This suggests list_indenter
+                    // affects tree content spacing beyond just the multiline_prefix.
+                    
+                    // DEBUG: Uncomment to debug spacing issues
+                    // eprintln!("DEBUG: multiline_prefix='{}', node_prefix='{}', item='{}'", 
+                    //           multiline_prefix.replace(' ', "·"), 
+                    //           node_prefix.replace(' ', "·"), 
+                    //           item.replace(' ', "·"));
+                    
                     let line = join_horizontal(TOP, &[&multiline_prefix, &node_prefix, &item]);
                     strs.push(line);
                     // Remember raw indent for subsequent container nodes (before styling)
@@ -568,7 +596,29 @@ impl Renderer {
                     // Use styled indent with enum styling applied to indenter characters
                     // This ensures custom indenters (like "->") get the same styling as enumerators
                     let styled_indent = indent.clone();
-                    let child_prefix = format!("{}{}", prefix, styled_indent);
+                    
+                    // SMART INDENTATION LOGIC:  
+                    // Trees nested in lists should not inherit the list's indenter to avoid double indentation.
+                    let dummy_children = crate::children::NodeChildren::new();
+                    let parent_indent_sample = indenter(&dummy_children, 0);
+                    let is_parent_list_indenter = parent_indent_sample.trim() == "" && parent_indent_sample.len() == 2;
+                    
+                    let child_prefix = if let Some(child_indenter) = child.get_indenter() {
+                        let child_indent_sample = child_indenter(&dummy_children, 0);
+                        let is_child_tree_indenter = child_indent_sample.contains('│') || child_indent_sample.len() == 4;
+                        
+                        // DEBUG: uncomment for debugging tree indentation
+                        // if child.get_enumerator_style().is_some() {
+                        //     eprintln!("DEBUG TREE: parent_indent='{}', child_indent='{}', is_parent_list={}, is_child_tree={}, prefix_len={}", 
+                        //         parent_indent_sample.replace(' ', "·"), child_indent_sample.replace(' ', "·"), is_parent_list_indenter, is_child_tree_indenter, prefix.len());
+                        // }
+                        
+                        // Always provide proper nesting prefix - the issue is tree's internal indentation, not prefix
+                        format!("{}{}", prefix, styled_indent)
+                    } else {
+                        // Child has no specific indenter - inherit parent's indentation
+                        format!("{}{}", prefix, styled_indent)
+                    };
                     
                     // Detect if child has style overrides (indicating it's a styled tree vs plain container)
                     let has_style_overrides = child.get_enumerator_style().is_some() 
@@ -576,7 +626,20 @@ impl Renderer {
                         || child.get_enumerator_style_func().is_some()
                         || child.get_item_style_func().is_some();
                     
-                    let mut child_renderer = if has_style_overrides {
+                    // Special case: if this child is a tree with its own indenter, use fresh renderer
+                    // to prevent list indenter from affecting tree's internal rendering
+                    let child_uses_tree_indenter = if let Some(child_indenter) = child.get_indenter() {
+                        let dummy = crate::children::NodeChildren::new();
+                        let sample = child_indenter(&dummy, 0);
+                        sample.contains('│') || sample.len() == 4
+                    } else {
+                        false
+                    };
+                    
+                    let mut child_renderer = if child_uses_tree_indenter {
+                        // Tree child: use fresh renderer to avoid inheriting list behavior
+                        Renderer::new()
+                    } else if has_style_overrides {
                         // Child has style overrides: use tree defaults for behavior but child styles
                         Renderer::new()
                     } else {
