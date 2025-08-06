@@ -695,14 +695,12 @@ impl Style {
         }
 
         // Determine margin background color
-        // In Go: if marginBgColor is not set, margin is transparent
-        // But to match the visual output, margin inherits from background if no explicit margin_background
+        // In Go: if marginBgColor is not set, margin is transparent (no background)
+        // Only inherit from main background if explicitly requested via margin_background
         let margin_bg_color = if self.is_set(MARGIN_BACKGROUND_KEY) {
             self.get_margin_background()
-        } else if self.is_set(BACKGROUND_KEY) {
-            // This is the key insight: inherit from main background
-            self.get_background()
         } else {
+            // Margins are transparent by default to match Go behavior
             None
         };
 
