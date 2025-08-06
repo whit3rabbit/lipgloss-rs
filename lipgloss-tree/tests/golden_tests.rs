@@ -301,6 +301,7 @@ fn test_multiline_prefix() {
         })
         .indenter(|_, _| " ".to_string())
         .item_style(padding_style)
+        .enumerator_style_func(|_, _| lipgloss::Style::new())
         .child(child![
             "Foo Document\nThe Foo Files",
             "Bar Document\nThe Bar Files",
@@ -326,6 +327,7 @@ fn test_multiline_prefix_subtree() {
             })
             .indenter(|_, _| " ".to_string())
             .item_style(padding_style.clone())
+            .enumerator_style_func(|_, _| lipgloss::Style::new())
             .child(child![
                 "Foo Document\nThe Foo Files",
                 "Bar Document\nThe Bar Files",
@@ -352,6 +354,7 @@ fn test_multiline_prefix_inception() {
         .enumerator(glow_enum)
         .indenter(glow_indenter)
         .item_style(padding_style.clone())
+        .enumerator_style_func(|_, _| lipgloss::Style::new())
         .child(child![
             "Foo Document\nThe Foo Files",
             "Bar Document\nThe Bar Files",
@@ -359,6 +362,7 @@ fn test_multiline_prefix_inception() {
                 .enumerator(glow_enum)
                 .indenter(glow_indenter)
                 .item_style(padding_style.clone())
+                .enumerator_style_func(|_, _| lipgloss::Style::new())
                 .child(child![
                     "Qux Document\nThe Qux Files",
                     "Quux Document\nThe Quux Files",

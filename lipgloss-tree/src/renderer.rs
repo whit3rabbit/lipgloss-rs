@@ -259,11 +259,21 @@ impl Renderer {
                 } else {
                     last_display_indent.clone()
                 };
-                // Apply enum_base style to indent if present (for custom indenters like "->")
-                let indent = if let Some(base) = &enum_base {
-                    base.render(&raw_indent)
+                // Apply styling to indent based on the type of indenter
+                let indent = if raw_indent.trim().is_empty() {
+                    // Standard whitespace indenter - apply item_base style if present (for padding)
+                    if let Some(base) = &item_base {
+                        base.render(&raw_indent)
+                    } else {
+                        raw_indent.clone()
+                    }
                 } else {
-                    raw_indent.clone()
+                    // Custom indenter (like "->") - apply enum_base style if present (for colors/styling)
+                    if let Some(base) = &enum_base {
+                        base.render(&raw_indent)
+                    } else {
+                        raw_indent.clone()
+                    }
                 };
 
                 // Compute enumerator only for visible children
@@ -329,16 +339,22 @@ impl Renderer {
                     // Only apply function style if no base style is set
                     let item_style_result = item_style_func(&vis_children, idx);
                     let item_lead = item_style_result.render("");
-                    if !item_lead.is_empty() {
+                    
+                    // Check if this is a true set_string style vs padding-only style
+                    // Padding-only styles render to whitespace-only strings (spaces, tabs, newlines)
+                    // Set_string styles have non-whitespace content
+                    let is_padding_only = item_lead.chars().all(|c| c.is_whitespace());
+                    
+                    if is_padding_only {
+                        // Apply the style function to the item directly (padding-only or no style)
+                        item = item_style_result.render(&item);
+                    } else {
                         // This is a style with a string set via set_string (like Go's SetString)
                         if !item_lead.ends_with(' ') {
                             item = format!("{} {}", item_lead, item);
                         } else {
                             item = format!("{}{}", item_lead, item);
                         }
-                    } else {
-                        // Apply the style function to the item directly
-                        item = item_style_result.render(&item);
                     }
                 }
                 let mut multiline_prefix = prefix.to_string();
