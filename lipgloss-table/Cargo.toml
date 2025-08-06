@@ -1,0 +1,12 @@
+[package]
+name = "lipgloss-table"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A table component for terminal user interfaces, styled with Lip Gloss."
+
+[dependencies]
+lipgloss = { workspace = true }
+unicode-width = { workspace = true }

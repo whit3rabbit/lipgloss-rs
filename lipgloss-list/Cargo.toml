@@ -1,0 +1,16 @@
+[package]
+name = "lipgloss-list"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "A list component for terminal user interfaces, styled with Lip Gloss."
+
+[dependencies]
+lipgloss = { workspace = true }
+lipgloss-tree = { workspace = true } # Lists are built o0.0.6es
+unicode-width = { workspace = true }

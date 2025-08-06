@@ -1,0 +1,26 @@
+[package]
+name = "lipgloss"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Style definitions for nice terminal layouts. The core of the lipgloss-rs library."
+
+[dependencies]
+# Inherit dependency versions from the workspace `[workspace.dependencies]` table.
+crossterm = { workspace = true }
+unicode-width = { workspace = true }
+palette = { workspace = true }
+strip-ansi-escapes = { workspace = true }
+
+[dev-dependencies]
+tokio.workspace = true
+criterion = "0.5"
+
+[[bench]]
+name = "performance_bench"
+harness = false

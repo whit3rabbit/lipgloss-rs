@@ -1,0 +1,11 @@
+[package]
+name = "ssh-demo"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+lipgloss = { workspace = true }
+crossterm = "0.27"

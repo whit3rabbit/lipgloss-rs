@@ -1,0 +1,16 @@
+[package]
+name = "duckduckgoose-list-demo"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "duckduckgoose-list-demo"
+path = "src/main.rs"
+
+[dependencies]
+lipgloss.workspace = true
+lipgloss-list.workspace = true
+lipgloss-tree.workspace = true
