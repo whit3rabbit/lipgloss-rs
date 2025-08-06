@@ -19,7 +19,7 @@ strip-ansi-escapes = { workspace = true }
 
 [dev-dependencies]
 tokio.workspace = true
-criterion = "0.5"
+criterion = "0.7"
 
 [[bench]]
 name = "performance_bench"
