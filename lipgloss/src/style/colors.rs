@@ -540,8 +540,8 @@ impl Style {
     ///
     /// # See Also
     ///
-    /// - [`border_foreground`] - Sets all border sides to the same color
-    /// - [`border_top_foreground`], [`border_right_foreground`], etc. - Individual side colors
+    /// - [`Self::border_foreground`] - Sets all border sides to the same color
+    /// - [`Self::border_top_foreground`], [`Self::border_right_foreground`], etc. - Individual side colors
     pub fn border_foreground_shorthand<C: TerminalColor + Clone>(self, colors: &[C]) -> Self {
         let result = which_sides_color(colors);
         let (top, right, bottom, left, ok) = result;
@@ -597,8 +597,8 @@ impl Style {
     ///
     /// # See Also
     ///
-    /// - [`border_background`] - Sets all border sides to the same background color
-    /// - [`border_top_background`], [`border_right_background`], etc. - Individual side colors
+    /// - [`Self::border_background`] - Sets all border sides to the same background color
+    /// - [`Self::border_top_background`], [`Self::border_right_background`], etc. - Individual side colors
     pub fn border_background_shorthand<C: TerminalColor + Clone>(self, colors: &[C]) -> Self {
         let result = which_sides_color(colors);
         let (top, right, bottom, left, ok) = result;

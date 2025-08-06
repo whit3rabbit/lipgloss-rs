@@ -400,7 +400,6 @@ impl Tree {
     pub fn get_enumerator_style(&self) -> Option<&Style> {
         self.enumerator_style.as_ref()
     }
-
 }
 
 impl Default for Tree {

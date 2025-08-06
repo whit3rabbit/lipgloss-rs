@@ -555,8 +555,8 @@ impl Style {
     ///
     /// # See Also
     ///
-    /// - [`padding`] - For explicit four-side padding
-    /// - [`padding_top`], [`padding_right`], [`padding_bottom`], [`padding_left`] - Individual sides
+    /// - [`Self::padding`] - For explicit four-side padding
+    /// - [`Self::padding_top`], [`Self::padding_right`], [`Self::padding_bottom`], [`Self::padding_left`] - Individual sides
     pub fn padding_shorthand(self, values: &[i32]) -> Self {
         let (top, right, bottom, left, ok) = which_sides_int(values);
         if !ok {
@@ -606,8 +606,8 @@ impl Style {
     ///
     /// # See Also
     ///
-    /// - [`margin`] - For explicit four-side margin
-    /// - [`margin_top`], [`margin_right`], [`margin_bottom`], [`margin_left`] - Individual sides
+    /// - [`Self::margin`] - For explicit four-side margin
+    /// - [`Self::margin_top`], [`Self::margin_right`], [`Self::margin_bottom`], [`Self::margin_left`] - Individual sides
     pub fn margin_shorthand(self, values: &[i32]) -> Self {
         let (top, right, bottom, left, ok) = which_sides_int(values);
         if !ok {
@@ -652,8 +652,8 @@ impl Style {
     ///
     /// # See Also
     ///
-    /// - [`align`] - For explicit horizontal and vertical alignment
-    /// - [`align_horizontal`], [`align_vertical`] - Individual alignment axes
+    /// - [`Self::align`] - For explicit horizontal and vertical alignment
+    /// - [`Self::align_horizontal`], [`Self::align_vertical`] - Individual alignment axes
     pub fn align_shorthand(self, positions: &[Position]) -> Self {
         match positions.len() {
             1 => self.align_horizontal(positions[0]),

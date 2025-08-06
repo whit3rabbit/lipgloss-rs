@@ -158,7 +158,6 @@ pub fn join_horizontal(pos: Position, strs: &[&str]) -> String {
     out
 }
 
-
 /// Joins multiple strings vertically with horizontal alignment control.
 ///
 /// This function takes multiple text blocks (which may contain newlines) and

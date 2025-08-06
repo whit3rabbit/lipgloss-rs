@@ -99,7 +99,7 @@ impl Renderer {
         if node.hidden() {
             return String::new();
         }
-        
+
         // Debug: uncomment for debugging
         // eprintln!("RENDER_START: root={}, prefix='{}', prefix_len={}", root, prefix.replace('\n', "\\n"), prefix.len());
 
@@ -311,7 +311,7 @@ impl Renderer {
                     let padding = safe_repeat(' ', max_len - prefix_width);
                     node_prefix = format!("{}{}", padding, node_prefix);
                 }
-                // Debug: uncomment for debugging  
+                // Debug: uncomment for debugging
                 // eprintln!("RENDER: idx={}, prefix='{}', width={}, max_len={}, final='{}'", idx, node_prefix.replace('\n', "\\n"), prefix_width, max_len, node_prefix.replace('\n', "\\n"));
                 // Apply base then func styles for item, with composable lead
                 let mut item = child.value();
@@ -370,7 +370,7 @@ impl Renderer {
                 if child.children().length() > 0 {
                     // Even if the child has an empty value (container), we still need to
                     // indent its children so they appear nested under the current item.
-                    // Apply enum style to indent for child prefix (matching Go behavior)  
+                    // Apply enum style to indent for child prefix (matching Go behavior)
                     // But only if the indent is purely whitespace AND short (less than default length)
                     let styled_indent_for_child = if indent.trim().is_empty() && indent.len() < 4 {
                         enum_style_func(&vis_children, idx).render(&indent)
@@ -405,9 +405,13 @@ impl Renderer {
                             let look_for = format!("{}{}", child_prefix, last_branch);
                             if let Some(pos) = child_output.rfind(&look_for) {
                                 // Ensure we are at line start; find preceding newline or start
-                                let line_start = child_output[..pos].rfind('\n').map(|p| p + 1).unwrap_or(0);
+                                let line_start =
+                                    child_output[..pos].rfind('\n').map(|p| p + 1).unwrap_or(0);
                                 if line_start == pos {
-                                    child_output.replace_range(pos..pos + look_for.len(), &format!("{}{}", child_prefix, mid_branch));
+                                    child_output.replace_range(
+                                        pos..pos + look_for.len(),
+                                        &format!("{}{}", child_prefix, mid_branch),
+                                    );
                                 }
                             }
                         }

@@ -39,13 +39,20 @@ pub fn gradient_rgb(start: Srgb<u8>, end: Srgb<u8>, count: usize) -> Vec<Color> 
 
     (0..count)
         .map(|i| {
-            let factor = if count > 1 { i as f32 / (count - 1) as f32 } else { 0.0 };
+            let factor = if count > 1 {
+                i as f32 / (count - 1) as f32
+            } else {
+                0.0
+            };
             let blended_luv = start_luv.mix(end_luv, factor);
             let blended_rgb = Srgb::from_color(blended_luv).into_format::<u8>();
-            Color::from(format!(
-                "#{:02x}{:02x}{:02x}",
-                blended_rgb.red, blended_rgb.green, blended_rgb.blue
-            ).as_str())
+            Color::from(
+                format!(
+                    "#{:02x}{:02x}{:02x}",
+                    blended_rgb.red, blended_rgb.green, blended_rgb.blue
+                )
+                .as_str(),
+            )
         })
         .collect()
 }
@@ -119,14 +126,22 @@ pub fn bilinear_interpolation_grid(
 
     let left_edge: Vec<Luv> = (0..y_steps)
         .map(|i| {
-            let factor = if y_steps > 1 { i as f32 / (y_steps - 1) as f32 } else { 0.0 };
+            let factor = if y_steps > 1 {
+                i as f32 / (y_steps - 1) as f32
+            } else {
+                0.0
+            };
             x0y0.mix(x0y1, factor)
         })
         .collect();
 
     let right_edge: Vec<Luv> = (0..y_steps)
         .map(|i| {
-            let factor = if y_steps > 1 { i as f32 / (y_steps - 1) as f32 } else { 0.0 };
+            let factor = if y_steps > 1 {
+                i as f32 / (y_steps - 1) as f32
+            } else {
+                0.0
+            };
             x1y0.mix(x1y1, factor)
         })
         .collect();
@@ -137,13 +152,20 @@ pub fn bilinear_interpolation_grid(
             let end_of_row = right_edge[y];
             (0..x_steps)
                 .map(|x| {
-                    let factor = if x_steps > 1 { x as f32 / (x_steps - 1) as f32 } else { 0.0 };
+                    let factor = if x_steps > 1 {
+                        x as f32 / (x_steps - 1) as f32
+                    } else {
+                        0.0
+                    };
                     let blended_luv = start_of_row.mix(end_of_row, factor);
                     let blended_rgb = Srgb::from_color(blended_luv).into_format::<u8>();
-                    Color::from(format!(
-                        "#{:02x}{:02x}{:02x}",
-                        blended_rgb.red, blended_rgb.green, blended_rgb.blue
-                    ).as_str())
+                    Color::from(
+                        format!(
+                            "#{:02x}{:02x}{:02x}",
+                            blended_rgb.red, blended_rgb.green, blended_rgb.blue
+                        )
+                        .as_str(),
+                    )
                 })
                 .collect()
         })

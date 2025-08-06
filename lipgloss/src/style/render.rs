@@ -120,10 +120,10 @@ impl Style {
             } else {
                 0
             };
-            
+
             // Calculate the actual content width by subtracting horizontal padding
             let content_width = (w_setting - pad_l - pad_r).max(0);
-            
+
             if content_width > 0 {
                 let mut wrapped_lines: Vec<String> = Vec::new();
                 for line in rendered.split('\n') {
@@ -175,20 +175,20 @@ impl Style {
         };
         if pad_t > 0 || pad_b > 0 {
             let mut lines = Vec::new();
-            
+
             // Add top padding lines
             if pad_t > 0 {
                 lines.extend(vec![String::new(); pad_t]);
             }
-            
+
             // Add existing content
             lines.extend(rendered.split('\n').map(|s| s.to_string()));
-            
+
             // Add bottom padding lines
             if pad_b > 0 {
                 lines.extend(vec![String::new(); pad_b]);
             }
-            
+
             rendered = lines.join("\n");
         }
 
@@ -200,39 +200,30 @@ impl Style {
         let profile = eff.color_profile();
 
         // Text attributes
-        if self.get_attr(ATTR_BOLD) && self.is_set(BOLD_KEY)
-        {
+        if self.get_attr(ATTR_BOLD) && self.is_set(BOLD_KEY) {
             sgr.push("1".to_string());
         }
-        if self.get_attr(ATTR_FAINT) && self.is_set(FAINT_KEY)
-        {
+        if self.get_attr(ATTR_FAINT) && self.is_set(FAINT_KEY) {
             sgr.push("2".to_string());
         }
-        if self.get_attr(ATTR_ITALIC) && self.is_set(ITALIC_KEY)
-        {
+        if self.get_attr(ATTR_ITALIC) && self.is_set(ITALIC_KEY) {
             sgr.push("3".to_string());
         }
-        if self.get_attr(ATTR_UNDERLINE) && self.is_set(UNDERLINE_KEY)
-        {
+        if self.get_attr(ATTR_UNDERLINE) && self.is_set(UNDERLINE_KEY) {
             sgr.push("4".to_string());
         }
-        if self.get_attr(ATTR_BLINK) && self.is_set(BLINK_KEY)
-        {
+        if self.get_attr(ATTR_BLINK) && self.is_set(BLINK_KEY) {
             sgr.push("5".to_string());
         }
-        if self.get_attr(ATTR_REVERSE) && self.is_set(REVERSE_KEY)
-        {
+        if self.get_attr(ATTR_REVERSE) && self.is_set(REVERSE_KEY) {
             sgr.push("7".to_string());
         }
-        if self.get_attr(ATTR_STRIKETHROUGH) && self.is_set(STRIKETHROUGH_KEY)
-        {
+        if self.get_attr(ATTR_STRIKETHROUGH) && self.is_set(STRIKETHROUGH_KEY) {
             sgr.push("9".to_string());
         }
 
         // Foreground color
-        if !matches!(profile, ColorProfileKind::NoColor)
-            && self.is_set(FOREGROUND_KEY)
-        {
+        if !matches!(profile, ColorProfileKind::NoColor) && self.is_set(FOREGROUND_KEY) {
             if let Some(ref tok) = self.fg_color {
                 if tok.starts_with('#') {
                     if let Some((r, g, b, _a)) = parse_hex_rgba(tok) {
@@ -268,9 +259,7 @@ impl Style {
                                 sgr.push("39".to_string()); // default foreground
                             }
                         }
-                        ColorProfileKind::ANSI256 => {
-                            sgr.push(format!("38;5;{}", idx))
-                        }
+                        ColorProfileKind::ANSI256 => sgr.push(format!("38;5;{}", idx)),
                         ColorProfileKind::NoColor => {}
                     }
                 }
@@ -278,9 +267,7 @@ impl Style {
         }
 
         // Background color
-        if !matches!(profile, ColorProfileKind::NoColor)
-            && self.is_set(BACKGROUND_KEY)
-        {
+        if !matches!(profile, ColorProfileKind::NoColor) && self.is_set(BACKGROUND_KEY) {
             if let Some(ref tok) = self.bg_color {
                 if tok.starts_with('#') {
                     if let Some((r, g, b, _a)) = parse_hex_rgba(tok) {
@@ -291,12 +278,14 @@ impl Style {
                             }
                             ColorProfileKind::ANSI256 => {
                                 // Convert RGB to ANSI256 background color
-                                let ansi256_idx = crate::color::rgb_to_ansi256(r as u8, g as u8, b as u8);
+                                let ansi256_idx =
+                                    crate::color::rgb_to_ansi256(r as u8, g as u8, b as u8);
                                 sgr.push(format!("48;5;{}", ansi256_idx));
                             }
                             ColorProfileKind::ANSI => {
                                 // Convert RGB to ANSI16 background color
-                                let ansi16_idx = crate::color::rgb_to_ansi16(r as u8, g as u8, b as u8);
+                                let ansi16_idx =
+                                    crate::color::rgb_to_ansi16(r as u8, g as u8, b as u8);
                                 sgr.push(format!("{}", 40 + ansi16_idx));
                             }
                             ColorProfileKind::NoColor => {}
@@ -320,9 +309,7 @@ impl Style {
                                 sgr.push("49".to_string()); // default background
                             }
                         }
-                        ColorProfileKind::ANSI256 => {
-                            sgr.push(format!("48;5;{}", idx))
-                        }
+                        ColorProfileKind::ANSI256 => sgr.push(format!("48;5;{}", idx)),
                         ColorProfileKind::NoColor => {}
                     }
                 }
@@ -334,8 +321,13 @@ impl Style {
         let target_height = self.get_height();
         let has_bg = self.is_set(BACKGROUND_KEY) || self.get_attr(ATTR_COLOR_WHITESPACE);
 
-        // If no SGR codes and no width/height constraints, we're done.
-        if sgr.is_empty() && target_width <= 0 && target_height <= 0 {
+        // Determine if we need to render any borders. If so, we must not early-return.
+        let has_borders =
+            (self.get_border_top() || self.get_border_right() || self.get_border_bottom() || self.get_border_left())
+                && self.is_set(BORDER_STYLE_KEY);
+
+        // If no SGR codes, no width/height constraints, and no borders, we're done.
+        if sgr.is_empty() && target_width <= 0 && target_height <= 0 && !has_borders {
             return rendered;
         }
 
@@ -345,7 +337,7 @@ impl Style {
         // LAYOUT FIRST: Create full-width canvas with alignment padding
         for line in lines {
             let mut canvas_line = line.to_string();
-            
+
             // If a width is set, create full-width canvas with alignment padding
             if target_width > 0 {
                 let line_vis_width = width_visible(&canvas_line);
@@ -358,12 +350,12 @@ impl Style {
 
                     let left_pad = safe_repeat(' ', left_gap);
                     let right_pad = safe_repeat(' ', right_gap);
-                    
+
                     // Create full-width canvas by adding alignment padding
                     canvas_line = format!("{}{}{}", left_pad, canvas_line, right_pad);
                 }
             }
-            
+
             final_lines.push(canvas_line);
         }
 
@@ -371,21 +363,25 @@ impl Style {
         if target_height > 0 && (final_lines.len() as i32) < target_height {
             let gap = target_height as usize - final_lines.len();
             let v_pos = self.get_align_vertical().value();
-            
+
             // Distribute padding lines based on vertical alignment
             // v_pos: 0.0=TOP (content at top, padding at bottom), 0.5=CENTER, 1.0=BOTTOM (content at bottom, padding at top)
             let top_pad_count = (gap as f64 * v_pos).round() as usize;
             let bottom_pad_count = gap - top_pad_count;
-            
+
             // Determine width for padding lines to match existing canvas width
-            let block_width = final_lines.iter().map(|l| width_visible(l)).max().unwrap_or(0);
+            let block_width = final_lines
+                .iter()
+                .map(|l| width_visible(l))
+                .max()
+                .unwrap_or(0);
             let empty_line = safe_repeat(' ', block_width);
-            
+
             let mut height_adjusted = Vec::new();
             height_adjusted.extend(vec![empty_line.clone(); top_pad_count]);
             height_adjusted.extend(final_lines);
             height_adjusted.extend(vec![empty_line; bottom_pad_count]);
-            
+
             final_lines = height_adjusted;
         }
 
@@ -533,17 +529,33 @@ impl Style {
                 if top_sgr.is_empty() {
                     format!(
                         "{}{}{}",
-                        if self.get_border_left() { b.top_left } else { b.top },
+                        if self.get_border_left() {
+                            b.top_left
+                        } else {
+                            b.top
+                        },
                         safe_str_repeat(b.top, w),
-                        if self.get_border_right() { b.top_right } else { b.top }
+                        if self.get_border_right() {
+                            b.top_right
+                        } else {
+                            b.top
+                        }
                     )
                 } else {
                     format!(
                         "{}{}{}{}{}",
                         top_sgr,
-                        if self.get_border_left() { b.top_left } else { b.top },
+                        if self.get_border_left() {
+                            b.top_left
+                        } else {
+                            b.top
+                        },
                         safe_str_repeat(b.top, w),
-                        if self.get_border_right() { b.top_right } else { b.top },
+                        if self.get_border_right() {
+                            b.top_right
+                        } else {
+                            b.top
+                        },
                         reset
                     )
                 }
@@ -592,17 +604,33 @@ impl Style {
                 if bottom_sgr.is_empty() {
                     format!(
                         "{}{}{}",
-                        if self.get_border_left() { b.bottom_left } else { b.bottom },
+                        if self.get_border_left() {
+                            b.bottom_left
+                        } else {
+                            b.bottom
+                        },
                         safe_str_repeat(b.bottom, w),
-                        if self.get_border_right() { b.bottom_right } else { b.bottom }
+                        if self.get_border_right() {
+                            b.bottom_right
+                        } else {
+                            b.bottom
+                        }
                     )
                 } else {
                     format!(
                         "{}{}{}{}{}",
                         bottom_sgr,
-                        if self.get_border_left() { b.bottom_left } else { b.bottom },
+                        if self.get_border_left() {
+                            b.bottom_left
+                        } else {
+                            b.bottom
+                        },
                         safe_str_repeat(b.bottom, w),
-                        if self.get_border_right() { b.bottom_right } else { b.bottom },
+                        if self.get_border_right() {
+                            b.bottom_right
+                        } else {
+                            b.bottom
+                        },
                         reset
                     )
                 }
@@ -620,24 +648,29 @@ impl Style {
             } else {
                 mid
             };
-            
+
             // Replace final_lines with the bordered content
-            final_lines = bordered_content.split('\n').map(|s| s.to_string()).collect();
+            final_lines = bordered_content
+                .split('\n')
+                .map(|s| s.to_string())
+                .collect();
         }
 
         // STYLING SECOND: Apply styling to entire canvas
         if !sgr.is_empty() {
             let prefix = format!("\x1b[{}m", sgr.join(";"));
             let suffix = "\x1b[0m";
-            
+
             if has_bg {
                 // For background colors, style the entire canvas including whitespace
-                final_lines = final_lines.into_iter()
+                final_lines = final_lines
+                    .into_iter()
                     .map(|line| format!("{}{}{}", prefix, line, suffix))
                     .collect();
             } else {
                 // For foreground-only styling, style only non-whitespace parts
-                final_lines = final_lines.into_iter()
+                final_lines = final_lines
+                    .into_iter()
                     .map(|line| {
                         let leading_spaces = line.chars().take_while(|&c| c == ' ').count();
                         let trailing_spaces = line.chars().rev().take_while(|&c| c == ' ').count();
@@ -659,10 +692,9 @@ impl Style {
 
         let mut result = final_lines.join("\n");
 
-
         // Apply all margins as final step (matches Go implementation)
         result = self.apply_margins(&result);
-        
+
         result
     }
 
@@ -710,19 +742,22 @@ impl Style {
         }
 
         // Apply left and right margins to each line
-        let lines: Vec<String> = block.split('\n').map(|line| {
-            let left = if left_margin > 0 {
-                margin_style.render(&safe_repeat(' ', left_margin))
-            } else {
-                String::new()
-            };
-            let right = if right_margin > 0 {
-                margin_style.render(&safe_repeat(' ', right_margin))
-            } else {
-                String::new()
-            };
-            format!("{}{}{}", left, line, right)
-        }).collect();
+        let lines: Vec<String> = block
+            .split('\n')
+            .map(|line| {
+                let left = if left_margin > 0 {
+                    margin_style.render(&safe_repeat(' ', left_margin))
+                } else {
+                    String::new()
+                };
+                let right = if right_margin > 0 {
+                    margin_style.render(&safe_repeat(' ', right_margin))
+                } else {
+                    String::new()
+                };
+                format!("{}{}{}", left, line, right)
+            })
+            .collect();
 
         let mut result = Vec::new();
 

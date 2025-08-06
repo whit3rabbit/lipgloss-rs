@@ -269,7 +269,7 @@ impl Style {
                     lines.push(current_line.clone());
                     current_line.clear();
                 }
-                
+
                 let mut wrapped_token = Self::hard_wrap_ansi_aware(&token, width);
                 if !wrapped_token.is_empty() {
                     // Add all but the last part of the hard-wrapped token to lines
@@ -295,10 +295,6 @@ impl Style {
             lines
         }
     }
-
-
-
-
 
     ///
     /// # Notes

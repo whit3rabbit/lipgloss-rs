@@ -363,7 +363,9 @@ impl Style {
     /// ```
     pub fn get_margin_background(&self) -> Option<Color> {
         if self.is_set(MARGIN_BACKGROUND_KEY) {
-            self.margin_bg_color.as_ref().map(|s| Color::from(s.as_str()))
+            self.margin_bg_color
+                .as_ref()
+                .map(|s| Color::from(s.as_str()))
         } else {
             None
         }
@@ -535,7 +537,7 @@ impl Style {
         }
     }
 
-    /// Gets the horizontal alignment setting (alias for [`get_align_horizontal`]).
+    /// Gets the horizontal alignment setting (alias for [`Self::get_align_horizontal`]).
     ///
     /// This is a convenience method that returns the same value as
     /// [`get_align_horizontal`](Self::get_align_horizontal).

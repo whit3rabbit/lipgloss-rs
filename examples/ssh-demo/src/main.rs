@@ -1,10 +1,8 @@
 use crossterm::terminal;
-use lipgloss::renderer::Renderer;
-use lipgloss::{
-    height, place, Style, CENTER,
-};
 use lipgloss::color::AdaptiveColor;
+use lipgloss::renderer::Renderer;
 use lipgloss::whitespace::{with_whitespace_chars, with_whitespace_foreground};
+use lipgloss::{height, place, Style, CENTER};
 
 // Available styles, built against a specific Renderer (to respect profile/background)
 struct Styles {
@@ -30,9 +28,7 @@ fn make_styles(_r: &Renderer) -> Styles {
         faint: Style::new().set_string("faint").faint(true),
         italic: Style::new().set_string("italic").italic(true),
         underline: Style::new().set_string("underline").underline(true),
-        strikethrough: Style::new()
-            .set_string("strikethrough")
-            .strikethrough(true),
+        strikethrough: Style::new().set_string("strikethrough").strikethrough(true),
         red: Style::new()
             .set_string("red")
             .foreground(lipgloss::Color("#E88388".into())),
@@ -109,7 +105,12 @@ fn main() {
     out.push_str("\n\n");
 
     let dark = renderer.has_dark_background();
-    out.push_str(&Style::new().unset_string().bold(true).render("Has dark background? "));
+    out.push_str(
+        &Style::new()
+            .unset_string()
+            .bold(true)
+            .render("Has dark background? "),
+    );
     out.push_str(&format!("{}\n\n", dark));
 
     // Center the composed block within the terminal width using whitespace
@@ -127,7 +128,10 @@ fn main() {
         &[
             with_whitespace_chars("/"),
             // Use AdaptiveColor for whitespace like the Go example (Light: 250, Dark: 236)
-            with_whitespace_foreground(AdaptiveColor { Light: "250".into(), Dark: "236".into() }),
+            with_whitespace_foreground(AdaptiveColor {
+                Light: "250".into(),
+                Dark: "236".into(),
+            }),
         ],
     );
 

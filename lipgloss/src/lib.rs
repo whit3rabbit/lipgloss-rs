@@ -35,7 +35,7 @@
 //!
 //! - [`style`] - Core styling functionality and the main `Style` struct
 //! - [`color`] - Color definitions and terminal color profile management
-//! - [`gradient`] - Color gradients and 2D color grids for advanced styling
+//! - [`mod@gradient`] - Color gradients and 2D color grids for advanced styling
 //! - [`border`] - Border styles and customization
 //! - [`mod@align`] - Text alignment utilities
 //! - [`position`] - Positioning and placement functions

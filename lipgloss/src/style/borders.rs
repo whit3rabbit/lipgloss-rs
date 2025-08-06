@@ -310,9 +310,9 @@ impl Style {
     ///
     /// # See Also
     ///
-    /// - [`border`] - Sets border style and enables all sides
-    /// - [`border_style`] - Sets border style without enabling sides
-    /// - [`border_top`], [`border_right`], [`border_bottom`], [`border_left`] - Individual side control
+    /// - [`Self::border`] - Sets border style and enables all sides
+    /// - [`Self::border_style`] - Sets border style without enabling sides
+    /// - [`Self::border_top`], [`Self::border_right`], [`Self::border_bottom`], [`Self::border_left`] - Individual side control
     pub fn border_with_sides(mut self, border: Border, sides: &[bool]) -> Self {
         self.border_style = border;
         self.set_prop(BORDER_STYLE_KEY);

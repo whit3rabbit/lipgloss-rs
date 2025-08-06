@@ -21,17 +21,11 @@ fn main() {
 
     // Example 2: Color grid
     println!("2. 2D Color Grid (4 corner interpolation):");
-    let grid = bilinear_interpolation_grid(
-        8, 4,
-        ("#FF0000", "#00FF00", "#0000FF", "#FFFF00")
-    );
-    
+    let grid = bilinear_interpolation_grid(8, 4, ("#FF0000", "#00FF00", "#0000FF", "#FFFF00"));
+
     for row in grid {
         for color in row {
-            let block = Style::new()
-                .set_string("██")
-                .foreground(color)
-                .render("");
+            let block = Style::new().set_string("██").foreground(color).render("");
             print!("{}", block);
         }
         println!();
@@ -43,7 +37,7 @@ fn main() {
     let text_colors = gradient("#FF6B6B", "#4ECDC4", 20);
     let text = "Gradient Text Example!";
     let mut result = String::new();
-    
+
     for (i, ch) in text.chars().enumerate() {
         let color = &text_colors[i % text_colors.len()];
         let styled_char = Style::new()
@@ -57,10 +51,7 @@ fn main() {
     println!("4. Background Gradient:");
     let bg_colors = gradient("#2C3E50", "#E74C3C", 15);
     for color in bg_colors {
-        let block = Style::new()
-            .set_string("  ")
-            .background(color)
-            .render("");
+        let block = Style::new().set_string("  ").background(color).render("");
         print!("{}", block);
     }
     println!("\n");

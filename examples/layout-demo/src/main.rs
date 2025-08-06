@@ -56,9 +56,17 @@ fn main() {
     let tab = Style::new()
         .border_style(tab_border)
         .border_foreground(highlight.clone())
-        .padding(0, 1, 0, 1);
+        .padding(0, 1, 0, 1)
+        .border_top(true)
+        .border_left(true)
+        .border_right(true)
+        .border_bottom(true);
 
-    let active_tab = tab.clone().border_style(active_tab_border);
+    // Active tab: keep bottom border enabled but draw it as spaces (Go parity)
+    // This preserves equal height across tabs while visually hiding the bottom edge.
+    let active_tab = tab
+        .clone()
+        .border_style(active_tab_border);
 
     // Title
     let title_style = Style::new()
@@ -66,7 +74,7 @@ fn main() {
         .margin_right(9)
         .padding(0, 1, 0, 1)
         .italic(true)
-        .foreground(Color::from("#FFF7DB"))
+        .foreground(Color::from("#FFFFFF"))
         .set_string("Lip Gloss");
 
     let desc_style = base.clone().margin_top(1);
@@ -86,9 +94,9 @@ fn main() {
     let button_style = Style::new()
         .foreground(Color::from("#FFF7DB"))
         .background(Color::from("#888B7E"))
-        .padding(0, 3, 0, 3) // Correct: 0 vertical, 3 horizontal
-        .margin_top(0);
-        
+        .padding(0, 3, 0, 3)
+        .margin_top(1);
+
     // Alternatively, you can use the shorthand for better readability:
     // .padding_shorthand(&[0, 3])
 
@@ -96,6 +104,7 @@ fn main() {
         .clone()
         .foreground(Color::from("#FFF7DB"))
         .background(Color::from("#F25D94"))
+        .margin_right(2)
         .underline(true);
 
     // List
@@ -165,13 +174,9 @@ fn main() {
         Dark: "#353533".to_string(),
     });
 
-    let status_style = status_nugget
-        .clone()
-        .background(Color::from("#FF5F87"));
+    let status_style = status_nugget.clone().background(Color::from("#FF5F87"));
 
-    let encoding_style = status_nugget
-        .clone()
-        .background(Color::from("#A550DF"));
+    let encoding_style = status_nugget.clone().background(Color::from("#A550DF"));
 
     let fish_cake_style = status_nugget.background(Color::from("#6124DF"));
 
@@ -180,6 +185,9 @@ fn main() {
 
     // Tabs
     {
+        // Use join_horizontal to correctly stitch multi-line bordered tabs.
+        // Align on TOP so all tabs share the same top edge; the active tab
+        // simply omits its bottom border without shifting downward.
         let row = join_horizontal(
             TOP,
             &[
@@ -191,9 +199,14 @@ fn main() {
             ],
         );
         let gap_width = max(0, WIDTH - width(&row) as i32 - 2);
-        let gap = Style::new()
-            .foreground(highlight.clone())
-            .render(&safe_str_repeat("─", gap_width as usize));
+        // Match Go: use a tabGap style (no top/left/right) so only the bottom border draws
+        // the trailing line at the correct vertical position.
+        let tab_gap = tab
+            .clone()
+            .border_top(false)
+            .border_left(false)
+            .border_right(false);
+        let gap = tab_gap.render(&safe_str_repeat(" ", gap_width as usize));
         let row = join_horizontal(BOTTOM, &[&row, &gap]);
         doc.push_str(&row);
         doc.push_str("\n\n");
@@ -203,17 +216,19 @@ fn main() {
     {
         // Stepped title using the same bilinear color grid as the Go demo
         // Text remains off-white per title_style (to match Go)
-        let colors = bilinear_interpolation_grid(1, 5, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
+        let colors =
+            bilinear_interpolation_grid(1, 5, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
         let mut title_parts = Vec::new();
 
         for (i, v) in colors.iter().enumerate() {
             let offset = 2; // step width
-            // explicit empty spacer to guarantee blank columns between steps
+                            // explicit empty spacer to guarantee blank columns between steps
             let left_spacer = Style::new().width((i * offset) as i32).render("");
             let c = v[0].clone();
             let colored = title_style
                 .clone()
                 .background(c)
+                .foreground(Color::from("#FFFFFF"))
                 .render("");
             let stepped = join_horizontal(TOP, &[&left_spacer, &colored]);
             title_parts.push(stepped);
@@ -260,35 +275,35 @@ fn main() {
                 "Are you sure you want to eat marmalade?",
                 &blends,
             ));
-        // Explicit spacer to match Go demo spacing between buttons
-        let spacer = Style::new()
-            .set_string(" ")
-            .padding(0, 1, 0, 1)
-            .render("");
-        let buttons = join_horizontal(TOP, &[&ok_button, &spacer, &cancel_button]);
-        // Add an explicit single-line spacer between question and buttons
-        let v_spacer = Style::new().height(1).render("");
-        let ui = join_vertical(CENTER, &[&question, &v_spacer, &buttons]);
 
-        let dialog = place(
+        // Match Go: no manual spacer, rely on active button's right margin
+        let buttons = join_horizontal(TOP, &[&ok_button, &cancel_button]);
+        // Match Go: vertically center and let JoinVertical(CENTER) handle horizontal centering
+        let ui = join_vertical(CENTER, &[&question, &buttons]);
+
+        // Let Place do the centering and background fill. Do not pre-set dialog width.
+        let dialog = dialog_box_style.render(&ui);
+
+        let placed = place(
             WIDTH,
             9,
             CENTER,
             CENTER,
-            &dialog_box_style.render(&ui),
+            &dialog,
             &[
                 with_whitespace_chars("猫咪"),
-                with_whitespace_foreground(Color::from("8")),
+                with_whitespace_foreground(subtle.clone()),
             ],
         );
 
-        doc.push_str(&dialog);
+        doc.push_str(&placed);
         doc.push_str("\n\n");
     }
 
     // Color grid
     let colors = {
-        let colors = bilinear_interpolation_grid(14, 8, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
+        let colors =
+            bilinear_interpolation_grid(14, 8, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
         let mut b = String::new();
         for (i, x) in colors.iter().enumerate() {
             for y in x {
@@ -342,7 +357,7 @@ fn main() {
     // Marmalade history
     {
         const HISTORY_A: &str = r#"The Romans learned from the Greeks that quinces slowly cooked with honey would "set" when cool. The Apicius gives a recipe for preserving whole quinces, stems and leaves attached, in a bath of honey diluted with defrutum: Roman marmalade. Preserves of quince and lemon appear (along with rose, apple, plum and pear) in the Book of ceremonies of the Byzantine Emperor Constantine VII Porphyrogennetos."#;
-        const HISTORY_B: &str = r#"Medieval quince preserves, which went by the French name cotignac, produced in a clear version and a fruit pulp version, began to lose their medieval seasoning of spices in the 16th century. In the 17th century, La Varenne provided recipes for both thick and clear cotignac."#;  
+        const HISTORY_B: &str = r#"Medieval quince preserves, which went by the French name cotignac, produced in a clear version and a fruit pulp version, began to lose their medieval seasoning of spices in the 16th century. In the 17th century, La Varenne provided recipes for both thick and clear cotignac."#;
         const HISTORY_C: &str = r#"In 1524, Henry VIII, King of England, received a "box of marmalade" from Mr. Hull of Exeter. This was probably marmelada, a solid quince paste from Portugal, still made and sold in southern Europe today. It became a favourite treat of Anne Boleyn and her ladies in waiting."#;
 
         let marmalade_section = join_horizontal(
@@ -373,19 +388,31 @@ fn main() {
         let status_segment = status_style.render("STATUS");
         let utf8_segment = encoding_style.render("UTF-8");
         let fish_segment = fish_cake_style.render("🍥 Fish Cake");
-        
+
         // Calculate the width needed for the middle "Ravishing" section
         let segments_width = width(&status_segment) + width(&utf8_segment) + width(&fish_segment);
         // Add an explicit spacer between "STATUS" and the middle section
         let status_gap = status_bar_style.clone().width(2).render("");
         let middle_width = WIDTH - segments_width as i32 - width(&status_gap) as i32;
-        
+
         // Create the middle section with the main background
-        let middle_section = status_bar_style.clone().width(middle_width).render("Ravishing");
-        
+        let middle_section = status_bar_style
+            .clone()
+            .width(middle_width)
+            .render("Ravishing");
+
         // Join all segments together (with spacer after STATUS)
-        let bar = join_horizontal(TOP, &[&status_segment, &status_gap, &middle_section, &utf8_segment, &fish_segment]);
-        
+        let bar = join_horizontal(
+            TOP,
+            &[
+                &status_segment,
+                &status_gap,
+                &middle_section,
+                &utf8_segment,
+                &fish_segment,
+            ],
+        );
+
         doc.push_str(&bar);
     }
 
@@ -402,8 +429,6 @@ fn main() {
     // Okay, let's print it
     println!("{}", final_doc_style.render(&doc));
 }
-
-
 
 fn rainbow(base: Style, s: &str, colors: &[Color]) -> String {
     let mut result = String::new();

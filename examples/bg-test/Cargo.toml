@@ -1,7 +1,0 @@
-[package]
-name = "bg-test"
-version = "0.0.6"
-edition = "2021"
-
-[dependencies]
-lipgloss = { path = "../../lipgloss" }

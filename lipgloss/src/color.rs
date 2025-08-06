@@ -224,34 +224,22 @@ fn ansi256_to_rgb_u8(idx: u8) -> (u8, u8, u8) {
 pub(crate) fn rgb_to_ansi16(r: u8, g: u8, b: u8) -> u8 {
     // Map to nearest among standard 16 ANSI colors using perceptually accurate Delta E
     // distance in the CIE L*a*b* color space, matching Go's termenv behavior.
-    let source_color = Srgb::new(
-        r as f32 / 255.0, 
-        g as f32 / 255.0, 
-        b as f32 / 255.0
-    );
+    let source_color = Srgb::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
     let source_lab = Lab::from_color(source_color.into_linear());
-    
+
     ANSI16_RGB
         .iter()
         .enumerate()
         .min_by(|(_, &(r1, g1, b1)), (_, &(r2, g2, b2))| {
-            let p1_color = Srgb::new(
-                r1 as f32 / 255.0,
-                g1 as f32 / 255.0, 
-                b1 as f32 / 255.0
-            );
+            let p1_color = Srgb::new(r1 as f32 / 255.0, g1 as f32 / 255.0, b1 as f32 / 255.0);
             let p1_lab = Lab::from_color(p1_color.into_linear());
-            
-            let p2_color = Srgb::new(
-                r2 as f32 / 255.0,
-                g2 as f32 / 255.0,
-                b2 as f32 / 255.0  
-            );
+
+            let p2_color = Srgb::new(r2 as f32 / 255.0, g2 as f32 / 255.0, b2 as f32 / 255.0);
             let p2_lab = Lab::from_color(p2_color.into_linear());
-            
+
             let d1 = source_lab.distance(p1_lab);
             let d2 = source_lab.distance(p2_lab);
-            
+
             d1.total_cmp(&d2)
         })
         .map(|(i, _)| i as u8)
@@ -334,8 +322,11 @@ pub(crate) fn resolve_color_token_for_profile(s: &str, profile: ColorProfileKind
             // If the input is a numeric token, handle direct ANSI codes and color indices
             if let Ok(idx) = s.parse::<u32>() {
                 // Allow direct ANSI codes to pass through unchanged
-                if (idx >= 30 && idx <= 37) || (idx >= 90 && idx <= 97) || 
-                   (idx >= 40 && idx <= 47) || (idx >= 100 && idx <= 107) {
+                if (idx >= 30 && idx <= 37)
+                    || (idx >= 90 && idx <= 97)
+                    || (idx >= 40 && idx <= 47)
+                    || (idx >= 100 && idx <= 107)
+                {
                     return idx.to_string();
                 }
                 // For color indices 0-15, map to ANSI16 and pass through
@@ -633,7 +624,7 @@ mod tests {
         let input = "hello";
         let test_cases = [
             (ColorProfileKind::NoColor, "hello"),
-            (ColorProfileKind::ANSI, "\x1b[38;5;8mhello\x1b[0m"),
+            (ColorProfileKind::ANSI, "\x1b[34mhello\x1b[0m"),
             (ColorProfileKind::ANSI256, "\x1b[38;5;62mhello\x1b[0m"),
             (
                 ColorProfileKind::TrueColor,
