@@ -501,7 +501,7 @@ impl Table {
         }
 
         for (i, &width) in self.widths.iter().enumerate() {
-            border_parts.push(safe_str_repeat(self.border.middle, width));
+            border_parts.push(safe_str_repeat(self.border.top, width));
 
             if i < self.widths.len() - 1 && self.border_column {
                 border_parts.push(self.border.middle.to_string());
@@ -599,7 +599,7 @@ impl Table {
         }
 
         for (i, &width) in self.widths.iter().enumerate() {
-            border_parts.push(safe_str_repeat(self.border.middle, width));
+            border_parts.push(safe_str_repeat(self.border.top, width));
 
             if i < self.widths.len() - 1 && self.border_column {
                 border_parts.push(self.border.middle.to_string());

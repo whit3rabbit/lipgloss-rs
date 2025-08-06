@@ -1,6 +1,7 @@
 use crate::children::Children;
 use crate::{default_enumerator, default_indenter, Enumerator, Indenter, Node, StyleFunc};
 use lipgloss::{height, join_horizontal, join_vertical, Style, LEFT, TOP};
+use unicode_width::UnicodeWidthStr;
 
 // Minimal Children impl to synthesize enumerator glyphs with controlled length/index
 struct DummyChildren {
@@ -195,7 +196,18 @@ impl Renderer {
         // Helper to detect built-in branch glyphs
         let is_branch = |s: &str| s == "├──" || s == "└──" || s == "╰──";
 
-        // Skip width calculation entirely - Go doesn't seem to do alignment padding
+        // Calculate alignment padding for custom enumerators (not built-in branch glyphs)
+        let mut max_enum_width = 0;
+        for i in 0..filtered_children.length() {
+            let user_pref = enumerator(&vis_children, i);
+            if !is_branch(&user_pref) {
+                // Only consider custom enumerators for alignment
+                let width = user_pref.width();
+                if width > max_enum_width {
+                    max_enum_width = width;
+                }
+            }
+        }
 
         // Render children
         let mut last_display_indent = String::new();
@@ -247,9 +259,12 @@ impl Renderer {
                 } else {
                     last_display_indent.clone()
                 };
-                let indent = raw_indent.clone();
-                // Don't apply base style to indent here - we'll apply it to the final prefix instead
-                // This prevents double styling when we use the indent in extension logic
+                // Apply enum_base style to indent if present (for custom indenters like "->")
+                let indent = if let Some(base) = &enum_base {
+                    base.render(&raw_indent)
+                } else {
+                    raw_indent.clone()
+                };
 
                 // Compute enumerator only for visible children
                 // Base branch according to position in overall visual sequence
@@ -265,6 +280,19 @@ impl Renderer {
                 } else {
                     user_pref.clone()
                 };
+                
+                // Apply alignment padding for custom enumerators
+                if !is_custom_enum {
+                    // Built-in branch glyph - no alignment needed
+                } else if max_enum_width > 0 {
+                    // Custom enumerator - apply alignment padding
+                    let current_width = node_prefix.width();
+                    let padding_needed = max_enum_width.saturating_sub(current_width);
+                    if padding_needed > 0 {
+                        node_prefix = format!("{}{}", " ".repeat(padding_needed), node_prefix);
+                    }
+                }
+                
                 // FIXED: Apply either base style OR function style, not both
                 // This is the key fix for the double-spacing issue
                 if let Some(base) = &enum_base {
@@ -346,8 +374,8 @@ impl Renderer {
                 if child.children().length() > 0 {
                     // Even if the child has an empty value (container), we still need to
                     // indent its children so they appear nested under the current item.
-                    // Use raw indent without enum styling - indenter provides the spacing structure
-                    // The enum styling should only apply to tree branch glyphs, not indenter spacing
+                    // Use styled indent with enum styling applied to indenter characters
+                    // This ensures custom indenters (like "->") get the same styling as enumerators
                     let styled_indent = indent.clone();
                     let child_prefix = format!("{}{}", prefix, styled_indent);
                     
