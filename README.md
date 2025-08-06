@@ -1,12 +1,14 @@
 # lipgloss-rs
 
-Style definitions for nice terminal layouts. Built with TUIs in mind.
+A port of [lipgloss](https://github.com/charmbracelet/lipgloss) to Rust which are style definitions for nice terminal layouts.
+
+![Rust Layout Demo](assets/layout-demo-min.png)
 
 This is a Rust port of the excellent Go library of the same name, [**lipgloss**](https://github.com/charmbracelet/lipgloss), created by the talented team at [**Charm**](https://charm.sh). This port achieves **1:1 API compatibility** and **exact rendering parity** with the original Go implementation.
 
 `lipgloss-rs` takes an expressive, declarative approach to terminal rendering. Users familiar with CSS will feel at home.
 
-## 🎯 **Go Parity Achieved (August 2025)**
+## 🎯 **Go Parity Achieved**
 
 ✅ **Automatic Width/Height Constraints** - Act as minimum dimensions with intelligent padding  
 ✅ **Solid Background Blocks** - Background colors fill entire constrained areas  
