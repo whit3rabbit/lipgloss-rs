@@ -111,12 +111,12 @@ impl Style {
         let w_setting = self.get_width();
         if w_setting > 0 {
             let pad_l = if self.is_set(PADDING_LEFT_KEY) {
-                self.get_padding_left().max(0) as i32
+                self.get_padding_left().max(0)
             } else {
                 0
             };
             let pad_r = if self.is_set(PADDING_RIGHT_KEY) {
-                self.get_padding_right().max(0) as i32
+                self.get_padding_right().max(0)
             } else {
                 0
             };
@@ -176,17 +176,25 @@ impl Style {
         if pad_t > 0 || pad_b > 0 {
             let mut lines = Vec::new();
 
-            // Add top padding lines
+            // Add top padding lines more efficiently
             if pad_t > 0 {
-                lines.extend(vec![String::new(); pad_t]);
+                // Cap padding to prevent excessive allocations
+                let safe_pad_t = pad_t.min(1000);
+                for _ in 0..safe_pad_t {
+                    lines.push(String::new());
+                }
             }
 
             // Add existing content
             lines.extend(rendered.split('\n').map(|s| s.to_string()));
 
-            // Add bottom padding lines
+            // Add bottom padding lines more efficiently
             if pad_b > 0 {
-                lines.extend(vec![String::new(); pad_b]);
+                // Cap padding to prevent excessive allocations
+                let safe_pad_b = pad_b.min(1000);
+                for _ in 0..safe_pad_b {
+                    lines.push(String::new());
+                }
             }
 
             rendered = lines.join("\n");
@@ -251,9 +259,9 @@ impl Style {
                                 sgr.push(format!("{}", 30 + idx)); // 30-37 (standard colors)
                             } else if idx <= 15 {
                                 sgr.push(format!("{}", 82 + idx)); // 90-97 (82+8=90, 82+15=97, bright colors)
-                            } else if idx >= 30 && idx <= 37 {
+                            } else if (30..=37).contains(&idx) {
                                 sgr.push(format!("{}", idx)); // Direct ANSI codes 30-37
-                            } else if idx >= 90 && idx <= 97 {
+                            } else if (90..=97).contains(&idx) {
                                 sgr.push(format!("{}", idx)); // Direct ANSI codes 90-97
                             } else {
                                 sgr.push("39".to_string()); // default foreground
@@ -301,9 +309,9 @@ impl Style {
                                 sgr.push(format!("{}", 40 + idx)); // 40-47 (standard colors)
                             } else if idx <= 15 {
                                 sgr.push(format!("{}", 92 + idx)); // 100-107 (92+8=100, 92+15=107, bright colors)
-                            } else if idx >= 40 && idx <= 47 {
+                            } else if (40..=47).contains(&idx) {
                                 sgr.push(format!("{}", idx)); // Direct ANSI codes 40-47
-                            } else if idx >= 100 && idx <= 107 {
+                            } else if (100..=107).contains(&idx) {
                                 sgr.push(format!("{}", idx)); // Direct ANSI codes 100-107
                             } else {
                                 sgr.push("49".to_string()); // default background
@@ -325,9 +333,13 @@ impl Style {
         let has_borders =
             (self.get_border_top() || self.get_border_right() || self.get_border_bottom() || self.get_border_left())
                 && self.is_set(BORDER_STYLE_KEY);
+        
+        // Check if we have margins
+        let has_margins = self.is_set(MARGIN_TOP_KEY) || self.is_set(MARGIN_RIGHT_KEY) 
+                       || self.is_set(MARGIN_BOTTOM_KEY) || self.is_set(MARGIN_LEFT_KEY);
 
-        // If no SGR codes, no width/height constraints, and no borders, we're done.
-        if sgr.is_empty() && target_width <= 0 && target_height <= 0 && !has_borders {
+        // If no SGR codes, no width/height constraints, no borders, and no margins, we're done.
+        if sgr.is_empty() && target_width <= 0 && target_height <= 0 && !has_borders && !has_margins {
             return rendered;
         }
 
@@ -378,9 +390,17 @@ impl Style {
             let empty_line = safe_repeat(' ', block_width);
 
             let mut height_adjusted = Vec::new();
-            height_adjusted.extend(vec![empty_line.clone(); top_pad_count]);
+            // Cap padding to prevent excessive allocations
+            let safe_top_pad = top_pad_count.min(1000);
+            let safe_bottom_pad = bottom_pad_count.min(1000);
+            
+            for _ in 0..safe_top_pad {
+                height_adjusted.push(empty_line.clone());
+            }
             height_adjusted.extend(final_lines);
-            height_adjusted.extend(vec![empty_line; bottom_pad_count]);
+            for _ in 0..safe_bottom_pad {
+                height_adjusted.push(empty_line.clone());
+            }
 
             final_lines = height_adjusted;
         }
@@ -431,9 +451,9 @@ impl Style {
                                     parts.push(format!("{}", 30 + idx)); // 30-37
                                 } else if idx <= 15 {
                                     parts.push(format!("{}", 82 + idx)); // 90-97
-                                } else if idx >= 30 && idx <= 37 {
+                                } else if (30..=37).contains(&idx) {
                                     parts.push(format!("{}", idx)); // Direct ANSI codes 30-37
-                                } else if idx >= 90 && idx <= 97 {
+                                } else if (90..=97).contains(&idx) {
                                     parts.push(format!("{}", idx)); // Direct ANSI codes 90-97
                                 } else {
                                     parts.push("39".to_string()); // default
@@ -459,9 +479,9 @@ impl Style {
                                     parts.push(format!("{}", 40 + idx)); // 40-47
                                 } else if idx <= 15 {
                                     parts.push(format!("{}", 92 + idx)); // 100-107
-                                } else if idx >= 40 && idx <= 47 {
+                                } else if (40..=47).contains(&idx) {
                                     parts.push(format!("{}", idx)); // Direct ANSI codes 40-47
-                                } else if idx >= 100 && idx <= 107 {
+                                } else if (100..=107).contains(&idx) {
                                     parts.push(format!("{}", idx)); // Direct ANSI codes 100-107
                                 } else {
                                     parts.push("49".to_string()); // default
@@ -736,26 +756,43 @@ impl Style {
             None
         };
 
-        let mut margin_style = Style::new();
-        if let Some(bg) = margin_bg_color {
-            margin_style = margin_style.background(bg);
-        }
+        // Pre-render margin strings once to avoid repeated render calls
+        let (left_margin_str, right_margin_str) = if margin_bg_color.is_some() {
+            let mut margin_style = Style::new();
+            if let Some(ref bg) = margin_bg_color {
+                margin_style = margin_style.background(bg.clone());
+            }
+            let left = if left_margin > 0 {
+                margin_style.render(&safe_repeat(' ', left_margin.min(1000)))
+            } else {
+                String::new()
+            };
+            let right = if right_margin > 0 {
+                margin_style.render(&safe_repeat(' ', right_margin.min(1000)))
+            } else {
+                String::new()
+            };
+            (left, right)
+        } else {
+            // No background color, just use plain spaces
+            let left = if left_margin > 0 {
+                safe_repeat(' ', left_margin.min(1000))
+            } else {
+                String::new()
+            };
+            let right = if right_margin > 0 {
+                safe_repeat(' ', right_margin.min(1000))
+            } else {
+                String::new()
+            };
+            (left, right)
+        };
 
         // Apply left and right margins to each line
         let lines: Vec<String> = block
             .split('\n')
             .map(|line| {
-                let left = if left_margin > 0 {
-                    margin_style.render(&safe_repeat(' ', left_margin))
-                } else {
-                    String::new()
-                };
-                let right = if right_margin > 0 {
-                    margin_style.render(&safe_repeat(' ', right_margin))
-                } else {
-                    String::new()
-                };
-                format!("{}{}{}", left, line, right)
+                format!("{}{}{}", left_margin_str, line, right_margin_str)
             })
             .collect();
 
@@ -764,12 +801,20 @@ impl Style {
         // Apply top margin
         if top_margin > 0 {
             let block_width = lines.iter().map(|l| width_visible(l)).max().unwrap_or(0);
-            let empty_line = if block_width > 0 {
-                margin_style.render(&safe_repeat(' ', block_width))
+            let empty_line = if block_width > 0 && margin_bg_color.is_some() {
+                let mut margin_style = Style::new();
+                if let Some(ref bg) = margin_bg_color {
+                    margin_style = margin_style.background(bg.clone());
+                }
+                margin_style.render(&safe_repeat(' ', block_width.min(1000)))
+            } else if block_width > 0 {
+                safe_repeat(' ', block_width.min(1000))
             } else {
                 String::new()
             };
-            for _ in 0..top_margin {
+            // Cap margin to prevent excessive allocations
+            let safe_top_margin = top_margin.min(1000);
+            for _ in 0..safe_top_margin {
                 result.push(empty_line.clone());
             }
         }
@@ -779,12 +824,20 @@ impl Style {
         // Apply bottom margin
         if bottom_margin > 0 {
             let block_width = result.iter().map(|l| width_visible(l)).max().unwrap_or(0);
-            let empty_line = if block_width > 0 {
-                margin_style.render(&safe_repeat(' ', block_width))
+            let empty_line = if block_width > 0 && margin_bg_color.is_some() {
+                let mut margin_style = Style::new();
+                if let Some(ref bg) = margin_bg_color {
+                    margin_style = margin_style.background(bg.clone());
+                }
+                margin_style.render(&safe_repeat(' ', block_width.min(1000)))
+            } else if block_width > 0 {
+                safe_repeat(' ', block_width.min(1000))
             } else {
                 String::new()
             };
-            for _ in 0..bottom_margin {
+            // Cap margin to prevent excessive allocations
+            let safe_bottom_margin = bottom_margin.min(1000);
+            for _ in 0..safe_bottom_margin {
                 result.push(empty_line.clone());
             }
         }

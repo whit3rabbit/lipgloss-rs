@@ -322,10 +322,10 @@ pub(crate) fn resolve_color_token_for_profile(s: &str, profile: ColorProfileKind
             // If the input is a numeric token, handle direct ANSI codes and color indices
             if let Ok(idx) = s.parse::<u32>() {
                 // Allow direct ANSI codes to pass through unchanged
-                if (idx >= 30 && idx <= 37)
-                    || (idx >= 90 && idx <= 97)
-                    || (idx >= 40 && idx <= 47)
-                    || (idx >= 100 && idx <= 107)
+                if (30..=37).contains(&idx)
+                    || (90..=97).contains(&idx)
+                    || (40..=47).contains(&idx)
+                    || (100..=107).contains(&idx)
                 {
                     return idx.to_string();
                 }

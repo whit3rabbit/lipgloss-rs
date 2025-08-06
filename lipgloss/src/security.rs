@@ -50,12 +50,15 @@ pub fn validate_dimension(value: i32, _name: &str) -> i32 {
 /// Validates tab width allowing the special sentinel -1 (keep tabs as-is).
 ///
 /// Values are clamped as follows:
-/// - `-1` or any negative value -> `-1` (keep tabs)
+/// - `-1` exactly -> `-1` (keep tabs)
+/// - Other negative values -> `0` (for safety)
 /// - `0` -> remove tabs
 /// - `1..=MAX_DIMENSION` -> unchanged (limit enforced)
 pub fn validate_tab_width(value: i32) -> i32 {
-    if value < 0 {
+    if value == -1 {
         -1
+    } else if value < 0 {
+        0
     } else {
         value.min(MAX_DIMENSION)
     }
