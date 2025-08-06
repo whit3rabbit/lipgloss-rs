@@ -2,7 +2,7 @@
 
 use lipgloss::security::safe_str_repeat;
 use lipgloss::{
-    bilinear_interpolation_grid, gradient, join_horizontal, join_vertical, normal_border, place,
+    blend_1d, join_horizontal, join_vertical, normal_border, place,
     rounded_border,
     whitespace::{with_whitespace_chars, with_whitespace_foreground},
     width, AdaptiveColor, Color, Style, BOTTOM, CENTER, LEFT, RIGHT, TOP,
@@ -12,6 +12,22 @@ use std::env;
 
 const WIDTH: i32 = 96;
 const COLUMN_WIDTH: i32 = 30;
+
+// Color grid blends colors from 4 corner quadrants, into a box region using native blending
+fn color_grid(x_steps: usize, y_steps: usize, corners: (&str, &str, &str, &str)) -> Vec<Vec<Color>> {
+    let (top_left, top_right, bottom_left, bottom_right) = corners;
+    
+    let left_colors = blend_1d(y_steps, vec![Color::from(top_left), Color::from(bottom_left)]);
+    let right_colors = blend_1d(y_steps, vec![Color::from(top_right), Color::from(bottom_right)]);
+
+    let mut grid = Vec::with_capacity(y_steps);
+    for y in 0..y_steps {
+        let row_colors = blend_1d(x_steps, vec![left_colors[y].clone(), right_colors[y].clone()]);
+        grid.push(row_colors);
+    }
+
+    grid
+}
 
 fn main() {
     let mut doc = String::new();
@@ -30,7 +46,7 @@ fn main() {
         Light: "#43BF6D".to_string(),
         Dark: "#73F59F".to_string(),
     };
-    let blends = gradient("#F25D94", "#EDFF82", 50);
+    let blends = blend_1d(50, vec![Color::from("#F25D94"), Color::from("#EDFF82")]);
 
     let base = Style::new().foreground(normal);
 
@@ -217,7 +233,7 @@ fn main() {
         // Stepped title using the same bilinear color grid as the Go demo
         // Text remains off-white per title_style (to match Go)
         let colors =
-            bilinear_interpolation_grid(1, 5, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
+            color_grid(1, 5, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
         let mut title_parts = Vec::new();
 
         for (i, v) in colors.iter().enumerate() {
@@ -303,7 +319,7 @@ fn main() {
     // Color grid
     let colors = {
         let colors =
-            bilinear_interpolation_grid(14, 8, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
+            color_grid(14, 8, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
         let mut b = String::new();
         for (i, x) in colors.iter().enumerate() {
             for y in x {

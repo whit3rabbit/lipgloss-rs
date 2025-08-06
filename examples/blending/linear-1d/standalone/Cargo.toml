@@ -1,0 +1,14 @@
+[package]
+name = "linear-1d-standalone"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Standalone demo of 1D color blending with lipgloss-rs"
+
+[dependencies]
+lipgloss.workspace = true

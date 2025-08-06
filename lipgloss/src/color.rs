@@ -30,7 +30,7 @@
 
 use crate::renderer::{default_renderer, ColorProfileKind, Renderer};
 use palette::color_difference::EuclideanDistance;
-use palette::{FromColor, Lab, Srgb};
+use palette::{FromColor, Lab, Srgb, Hsv, Clamp};
 
 /// A color intended to be rendered in the terminal.
 ///
@@ -922,6 +922,122 @@ mod tests {
     }
 
     #[test]
+    fn test_color_utility_functions() {
+        // Test clamp
+        assert_eq!(clamp(5, 0, 10), 5);
+        assert_eq!(clamp(-1, 0, 10), 0);
+        assert_eq!(clamp(15, 0, 10), 10);
+
+        // Test parse_hex
+        assert_eq!(parse_hex("#ff0000"), Some((255, 0, 0, 255)));
+        assert_eq!(parse_hex("#f00"), Some((255, 0, 0, 255)));
+        assert_eq!(parse_hex("#ff0000aa"), Some((255, 0, 0, 170)));
+        assert_eq!(parse_hex("invalid"), None);
+        assert_eq!(parse_hex(""), None);
+
+        // Test is_dark_color
+        let black = Color("#000000".to_string());
+        let white = Color("#ffffff".to_string());
+        let dark_gray = Color("#404040".to_string());
+        let light_gray = Color("#c0c0c0".to_string());
+        
+        assert!(is_dark_color(&black));
+        assert!(!is_dark_color(&white));
+        assert!(is_dark_color(&dark_gray));
+        assert!(!is_dark_color(&light_gray));
+    }
+
+    #[test]
+    fn test_lighten_darken() {
+        let red = Color("#800000".to_string()); // Dark red
+        
+        // Test lighten
+        let lighter = lighten(&red, 0.5);
+        let (lr, lg, lb, _) = lighter.rgba();
+        let (or, og, ob, _) = red.rgba();
+        
+        // Should be lighter than original
+        assert!(lr >= or);
+        assert!(lg >= og);
+        assert!(lb >= ob);
+
+        // Test darken
+        let bright_red = Color("#ff0000".to_string());
+        let darker = darken(&bright_red, 0.3);
+        let (dr, dg, db, _) = darker.rgba();
+        let (br, bg, bb, _) = bright_red.rgba();
+        
+        // Should be darker than original  
+        assert!(dr <= br);
+        assert!(dg <= bg);
+        assert!(db <= bb);
+    }
+
+    #[test]
+    fn test_alpha_adjustment() {
+        let red = Color("#ff0000".to_string());
+        let semi_transparent = alpha(&red, 0.5);
+        
+        // Should have alpha component in hex string
+        assert!(semi_transparent.0.len() == 9); // #rrggbbaa format
+        assert!(semi_transparent.0.contains("7f") || semi_transparent.0.contains("80")); // ~127-128 in hex
+    }
+
+    #[test]
+    fn test_complementary_color() {
+        let red = Color("#ff0000".to_string());
+        let comp = complementary(&red);
+        let (cr, cg, cb, _) = comp.rgba();
+        
+        // Complementary of red should be cyan-ish (high green and blue)
+        assert!(cg > 100 || cb > 100);
+        assert!(cr < cg || cr < cb); // Red should be lower than green or blue
+    }
+
+    #[test]
+    fn test_light_dark_function() {
+        let red = Color("#ff0000".to_string());
+        let blue = Color("#0000ff".to_string());
+        
+        // Test dark background
+        let dark_fn = light_dark(true);
+        let dark_choice = dark_fn(&red, &blue);
+        let (dr, dg, db, _) = dark_choice.rgba();
+        let (br, bg, bb, _) = blue.rgba();
+        assert_eq!((dr, dg, db), (br, bg, bb)); // Should choose blue for dark
+        
+        // Test light background
+        let light_fn = light_dark(false);
+        let light_choice = light_fn(&red, &blue);
+        let (lr, lg, lb, _) = light_choice.rgba();
+        let (rr, rg, rb, _) = red.rgba();
+        assert_eq!((lr, lg, lb), (rr, rg, rb)); // Should choose red for light
+    }
+
+    #[test]
+    fn test_complete_function() {
+        use crate::renderer::ColorProfileKind;
+        
+        let ansi = Color("1".to_string());
+        let ansi256 = Color("124".to_string());
+        let truecolor = Color("#ff34ac".to_string());
+        
+        // Test TrueColor profile
+        let complete_fn = complete(ColorProfileKind::TrueColor);
+        let chosen = complete_fn(&ansi, &ansi256, &truecolor);
+        let (cr, cg, cb, _) = chosen.rgba();
+        let (tr, tg, tb, _) = truecolor.rgba();
+        assert_eq!((cr, cg, cb), (tr, tg, tb));
+        
+        // Test ANSI profile
+        let complete_fn = complete(ColorProfileKind::ANSI);
+        let chosen = complete_fn(&ansi, &ansi256, &truecolor);
+        let (cr, cg, cb, _) = chosen.rgba();
+        let (ar, ag, ab, _) = ansi.rgba();
+        assert_eq!((cr, cg, cb), (ar, ag, ab));
+    }
+
+    #[test]
     fn test_complete_adaptive_color_combinations() {
         let complete_adaptive = CompleteAdaptiveColor {
             light: CompleteColor {
@@ -1034,6 +1150,74 @@ impl From<&str> for Color {
     /// ```
     fn from(s: &str) -> Self {
         Color(s.to_string())
+    }
+}
+
+impl Color {
+    /// Creates a Color from RGBA values (equivalent to Go's color.RGBA).
+    ///
+    /// This method creates a Color from 8-bit RGBA values, which is useful
+    /// for creating colors from exact RGB specifications like in tests.
+    ///
+    /// # Arguments
+    ///
+    /// * `r` - Red component (0-255)
+    /// * `g` - Green component (0-255)
+    /// * `b` - Blue component (0-255)
+    /// * `a` - Alpha component (0-255)
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::color::Color;
+    ///
+    /// let red = Color::from_rgba(255, 0, 0, 255);
+    /// let semi_transparent_blue = Color::from_rgba(0, 0, 255, 127);
+    /// ```
+    pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        if a == 255 {
+            // Fully opaque, no need for alpha channel
+            Color(format!("#{:02x}{:02x}{:02x}", r, g, b))
+        } else {
+            // Include alpha channel
+            Color(format!("#{:02x}{:02x}{:02x}{:02x}", r, g, b, a))
+        }
+    }
+
+    /// Creates a Color from RGB values with full opacity.
+    ///
+    /// This is a convenience method for creating fully opaque colors.
+    ///
+    /// # Arguments
+    ///
+    /// * `r` - Red component (0-255)
+    /// * `g` - Green component (0-255)
+    /// * `b` - Blue component (0-255)
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::color::Color;
+    ///
+    /// let red = Color::from_rgb(255, 0, 0);
+    /// let green = Color::from_rgb(0, 255, 0);
+    /// ```
+    pub fn from_rgb(r: u8, g: u8, b: u8) -> Self {
+        Self::from_rgba(r, g, b, 255)
+    }
+
+    /// Returns 16-bit RGBA values (0-65535) for blending operations.
+    /// This matches Go's color.RGBA interface for exact parity.
+    pub fn rgba16(&self) -> (u32, u32, u32, u32) {
+        if let Some((r, g, b, a)) = parse_hex_rgba_8bit(&self.0) {
+            // Convert 8-bit values to true 16-bit for Go compatibility
+            srgb_to_true_rgba16(Srgb::new(r as u8, g as u8, b as u8), a as u8)
+        } else if let Ok(idx) = self.0.parse::<u32>() {
+            let (r, g, b) = ansi256_to_rgb_u8((idx % 256) as u8);
+            srgb_to_true_rgba16(Srgb::new(r, g, b), 255)
+        } else {
+            srgb_to_true_rgba16(Srgb::new(0, 0, 0), 255)
+        }
     }
 }
 
@@ -1260,6 +1444,58 @@ impl TerminalColor for CompleteAdaptiveColor {
 
 // --- helpers ---
 
+/// Parse hex color with 8-bit RGBA values for backward compatibility
+pub(crate) fn parse_hex_rgba_8bit(s: &str) -> Option<(u32, u32, u32, u32)> {
+    // Support #RGB, #RRGGBB, #RGBA, #RRGGBBAA forms.
+    let s = s.trim();
+    let hex = s.strip_prefix('#')?;
+
+    let (r, g, b, a_u8) = match hex.len() {
+        3 => {
+            // #RGB -> expand each nibble
+            let r = u8::from_str_radix(&hex[0..1], 16).ok()?;
+            let g = u8::from_str_radix(&hex[1..2], 16).ok()?;
+            let b = u8::from_str_radix(&hex[2..3], 16).ok()?;
+            let r = (r << 4) | r;
+            let g = (g << 4) | g;
+            let b = (b << 4) | b;
+            (r, g, b, 0xFF)
+        }
+        4 => {
+            // #RGBA -> expand
+            let r = u8::from_str_radix(&hex[0..1], 16).ok()?;
+            let g = u8::from_str_radix(&hex[1..2], 16).ok()?;
+            let b = u8::from_str_radix(&hex[2..3], 16).ok()?;
+            let a = u8::from_str_radix(&hex[3..4], 16).ok()?;
+            let r = (r << 4) | r;
+            let g = (g << 4) | g;
+            let b = (b << 4) | b;
+            let a = (a << 4) | a;
+            (r, g, b, a)
+        }
+        6 => {
+            // #RRGGBB
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            (r, g, b, 0xFF)
+        }
+        8 => {
+            // #RRGGBBAA
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            let a = u8::from_str_radix(&hex[6..8], 16).ok()?;
+            (r, g, b, a)
+        }
+        _ => return None,
+    };
+
+    // Return 8-bit values (no expansion to 16-bit)
+    Some((r as u32, g as u32, b as u32, a_u8 as u32))
+}
+
+/// Parse hex color with 16-bit RGBA values for blending operations (Go compatibility)
 pub(crate) fn parse_hex_rgba(s: &str) -> Option<(u32, u32, u32, u32)> {
     // Support #RGB, #RRGGBB, #RGBA, #RRGGBBAA forms.
     let s = s.trim();
@@ -1289,12 +1525,14 @@ pub(crate) fn parse_hex_rgba(s: &str) -> Option<(u32, u32, u32, u32)> {
             (r, g, b, a)
         }
         6 => {
+            // #RRGGBB
             let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
             let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
             let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
             (r, g, b, 0xFF)
         }
         8 => {
+            // #RRGGBBAA
             let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
             let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
             let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
@@ -1304,14 +1542,322 @@ pub(crate) fn parse_hex_rgba(s: &str) -> Option<(u32, u32, u32, u32)> {
         _ => return None,
     };
 
-    // Use palette for consistent sRGB semantics even if we simply return RGBA16.
+    // Use palette for consistent sRGB semantics and expand to 16-bit for blending.
     let rgb = Srgb::new(r, g, b);
     Some(srgb_to_rgba16(rgb, a_u8))
 }
 
 fn srgb_to_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
-    // Expand 8-bit channels to 16-bit like Go's color.RGBA
+    // Original behavior: keep RGB as 8-bit, expand alpha to 16-bit
     let (r, g, b) = (rgb.red as u32, rgb.green as u32, rgb.blue as u32);
     let a = a_u8 as u32;
     (r, g, b, a * 257)
+}
+
+/// Convert 8-bit RGBA to true 16-bit RGBA for Go blending compatibility
+fn srgb_to_true_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
+    // Expand 8-bit channels to 16-bit like Go's color.RGBA
+    // Go's color.RGBA interface returns 16-bit values where each 8-bit value 
+    // is expanded by multiplying by 257 (0x101) to fill the full 16-bit range
+    // So 255 (0xFF) becomes 65535 (0xFFFF)
+    let (r, g, b) = (
+        rgb.red as u32 * 257,
+        rgb.green as u32 * 257, 
+        rgb.blue as u32 * 257
+    );
+    let a = a_u8 as u32 * 257;
+    (r, g, b, a)
+}
+
+// --- Color Utility Functions ---
+
+/// Clamps a value between a low and high bound.
+pub fn clamp<T: PartialOrd>(v: T, low: T, high: T) -> T {
+    if v < low {
+        low
+    } else if v > high {
+        high
+    } else {
+        v
+    }
+}
+
+/// Adjusts the alpha value of a color using a 0-1 (clamped) float scale.
+/// 0 = transparent, 1 = opaque.
+///
+/// # Arguments
+/// * `color` - The color to adjust
+/// * `alpha` - Alpha value from 0.0 (transparent) to 1.0 (opaque)
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::{Color, alpha};
+///
+/// let red = Color("#ff0000".to_string());
+/// let semi_transparent_red = alpha(&red, 0.5);
+/// ```
+pub fn alpha<C: TerminalColor>(color: &C, alpha_val: f64) -> Color {
+    let (r, g, b, _) = color.rgba();
+    let clamped_alpha = clamp(alpha_val, 0.0, 1.0);
+    let alpha_u8 = (clamped_alpha * 255.0) as u8;
+    
+    // rgba() now returns 8-bit values directly
+    let r_u8 = r as u8;
+    let g_u8 = g as u8;
+    let b_u8 = b as u8;
+    
+    Color(format!(
+        "#{:02x}{:02x}{:02x}{:02x}",
+        r_u8, g_u8, b_u8, alpha_u8
+    ))
+}
+
+/// Makes a color lighter by a specific percentage (0-1, clamped).
+///
+/// # Arguments
+/// * `color` - The color to lighten
+/// * `percent` - Amount to lighten (0.0 = no change, 1.0 = maximum lightening)
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::{Color, lighten};
+///
+/// let dark_red = Color("#800000".to_string());
+/// let lighter_red = lighten(&dark_red, 0.3);
+/// ```
+pub fn lighten<C: TerminalColor>(color: &C, percent: f64) -> Color {
+    let (r, g, b, _a) = color.rgba();
+    let add = 255.0 * clamp(percent, 0.0, 1.0);
+    
+    // rgba() now returns 8-bit values directly
+    let r_u8 = r as u8;
+    let g_u8 = g as u8;  
+    let b_u8 = b as u8;
+    
+    Color(format!(
+        "#{:02x}{:02x}{:02x}",
+        ((r_u8 as f64 + add).min(255.0)) as u8,
+        ((g_u8 as f64 + add).min(255.0)) as u8,
+        ((b_u8 as f64 + add).min(255.0)) as u8
+    ))
+}
+
+/// Makes a color darker by a specific percentage (0-1, clamped).
+///
+/// # Arguments
+/// * `color` - The color to darken
+/// * `percent` - Amount to darken (0.0 = no change, 1.0 = maximum darkening)
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::{Color, darken};
+///
+/// let bright_red = Color("#ff0000".to_string());
+/// let darker_red = darken(&bright_red, 0.3);
+/// ```
+pub fn darken<C: TerminalColor>(color: &C, percent: f64) -> Color {
+    let (r, g, b, _a) = color.rgba();
+    let mult = 1.0 - clamp(percent, 0.0, 1.0);
+    
+    // rgba() now returns 8-bit values directly
+    let r_u8 = r as u8;
+    let g_u8 = g as u8;
+    let b_u8 = b as u8;
+    
+    Color(format!(
+        "#{:02x}{:02x}{:02x}",
+        (r_u8 as f64 * mult) as u8,
+        (g_u8 as f64 * mult) as u8,
+        (b_u8 as f64 * mult) as u8
+    ))
+}
+
+/// Returns the complementary color (180° away on color wheel) of the given color.
+/// This is useful for creating a contrasting color.
+///
+/// # Arguments
+/// * `color` - The color to find the complement of
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::{Color, complementary};
+///
+/// let blue = Color("#0000ff".to_string());
+/// let orange = complementary(&blue); // Should be approximately orange
+/// ```
+pub fn complementary<C: TerminalColor>(color: &C) -> Color {
+    let (r, g, b, _a) = color.rgba();
+    
+    // rgba() now returns 8-bit values directly
+    let r_u8 = r as u8;
+    let g_u8 = g as u8;
+    let b_u8 = b as u8;
+    
+    // Convert to HSV to rotate hue by 180°
+    let srgb = Srgb::new(r_u8 as f32 / 255.0, g_u8 as f32 / 255.0, b_u8 as f32 / 255.0);
+    let hsv: Hsv = Hsv::from_color(srgb);
+    
+    let mut new_hue = hsv.hue.into_positive_degrees() + 180.0;
+    if new_hue >= 360.0 {
+        new_hue -= 360.0;
+    } else if new_hue < 0.0 {
+        new_hue += 360.0;
+    }
+    
+    let complementary_hsv = Hsv::new(new_hue, hsv.saturation, hsv.value);
+    let complementary_srgb: Srgb = Srgb::from_color(complementary_hsv);
+    let clamped = complementary_srgb.clamp();
+    
+    Color(format!(
+        "#{:02x}{:02x}{:02x}",
+        (clamped.red * 255.0) as u8,
+        (clamped.green * 255.0) as u8,
+        (clamped.blue * 255.0) as u8
+    ))
+}
+
+/// Returns whether the given color is dark (based on the luminance portion of the color as interpreted as HSL).
+///
+/// # Arguments
+/// * `color` - The color to check
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::{Color, is_dark_color};
+///
+/// let black = Color("#000000".to_string());
+/// let white = Color("#ffffff".to_string());
+/// assert!(is_dark_color(&black));
+/// assert!(!is_dark_color(&white));
+/// ```
+pub fn is_dark_color<C: TerminalColor>(color: &C) -> bool {
+    let (r, g, b, _a) = color.rgba();
+    
+    // Calculate relative luminance (simplified)
+    let luminance = 0.299 * (r as f64) + 0.587 * (g as f64) + 0.114 * (b as f64);
+    luminance < 127.5 // Midpoint of 0-255
+}
+
+/// A function that returns a color based on whether the terminal has a light or dark background.
+pub type LightDarkFunc = Box<dyn Fn(&dyn TerminalColor, &dyn TerminalColor) -> Color>;
+
+/// Returns a function that chooses between light and dark colors based on background.
+///
+/// # Arguments
+/// * `is_dark` - Whether the background is dark
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::{Color, light_dark};
+///
+/// let light_dark_fn = light_dark(true); // Dark background
+/// let red = Color("#ff0000".to_string());
+/// let blue = Color("#0000ff".to_string());
+/// let chosen = light_dark_fn(&red, &blue); // Will choose blue for dark bg
+/// ```
+pub fn light_dark(is_dark: bool) -> LightDarkFunc {
+    Box::new(move |light: &dyn TerminalColor, dark: &dyn TerminalColor| {
+        if is_dark {
+            // Convert dark color to our Color type
+            let (r, g, b, _a) = dark.rgba();
+            Color(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
+        } else {
+            // Convert light color to our Color type  
+            let (r, g, b, _a) = light.rgba();
+            Color(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
+        }
+    })
+}
+
+/// A function that returns the appropriate color based on the color profile.
+pub type CompleteFunc = Box<dyn Fn(&dyn TerminalColor, &dyn TerminalColor, &dyn TerminalColor) -> Color>;
+
+/// Returns a function that will return the appropriate color based on the given color profile.
+///
+/// # Arguments
+/// * `profile` - The color profile to use for selection
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::{Color, complete};
+/// use lipgloss::renderer::ColorProfileKind;
+///
+/// let complete_fn = complete(ColorProfileKind::TrueColor);
+/// let ansi = Color("1".to_string());
+/// let ansi256 = Color("124".to_string()); 
+/// let truecolor = Color("#ff34ac".to_string());
+/// let chosen = complete_fn(&ansi, &ansi256, &truecolor); // Will choose truecolor
+/// ```
+pub fn complete(profile: ColorProfileKind) -> CompleteFunc {
+    Box::new(move |ansi: &dyn TerminalColor, ansi256: &dyn TerminalColor, truecolor: &dyn TerminalColor| {
+        let chosen_color = match profile {
+            ColorProfileKind::ANSI => ansi,
+            ColorProfileKind::ANSI256 => ansi256,
+            ColorProfileKind::TrueColor => truecolor,
+            ColorProfileKind::NoColor => return Color("".to_string()),
+        };
+        
+        let (r, g, b, _a) = chosen_color.rgba();
+        Color(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
+    })
+}
+
+/// Optimized hex color parsing with better performance than alternatives.
+/// Parses hex color strings in formats: #RGB, #RRGGBB, #RGBA, #RRGGBBAA
+///
+/// # Arguments
+/// * `hex` - Hex color string starting with #
+///
+/// # Returns
+/// * `Some((r, g, b, a))` - RGBA components as u8 values, or None if invalid
+///
+/// # Examples
+/// ```rust
+/// use lipgloss::color::parse_hex;
+///
+/// assert_eq!(parse_hex("#ff0000"), Some((255, 0, 0, 255)));
+/// assert_eq!(parse_hex("#f00"), Some((255, 0, 0, 255)));
+/// assert_eq!(parse_hex("invalid"), None);
+/// ```
+pub fn parse_hex(s: &str) -> Option<(u8, u8, u8, u8)> {
+    let s = s.trim();
+    if s.is_empty() || !s.starts_with('#') {
+        return None;
+    }
+    
+    let hex = &s[1..];
+    
+    match hex.len() {
+        3 => {
+            // #RGB
+            let r = u8::from_str_radix(&hex[0..1], 16).ok()?;
+            let g = u8::from_str_radix(&hex[1..2], 16).ok()?;
+            let b = u8::from_str_radix(&hex[2..3], 16).ok()?;
+            Some(((r << 4) | r, (g << 4) | g, (b << 4) | b, 255))
+        }
+        4 => {
+            // #RGBA
+            let r = u8::from_str_radix(&hex[0..1], 16).ok()?;
+            let g = u8::from_str_radix(&hex[1..2], 16).ok()?;
+            let b = u8::from_str_radix(&hex[2..3], 16).ok()?;
+            let a = u8::from_str_radix(&hex[3..4], 16).ok()?;
+            Some(((r << 4) | r, (g << 4) | g, (b << 4) | b, (a << 4) | a))
+        }
+        6 => {
+            // #RRGGBB
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            Some((r, g, b, 255))
+        }
+        8 => {
+            // #RRGGBBAA
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            let a = u8::from_str_radix(&hex[6..8], 16).ok()?;
+            Some((r, g, b, a))
+        }
+        _ => None,
+    }
 }

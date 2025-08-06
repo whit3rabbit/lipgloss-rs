@@ -25,6 +25,10 @@ members = [
     "examples/tree-demo/toggle",
     "examples/tree-demo/rounded",
     "examples/tree-demo/files",
+    "examples/blending/comprehensive-demo",
+    "examples/blending/linear-1d/standalone",
+    "examples/blending/linear-2d/standalone", 
+    "examples/blending/brightness",
     "examples/ssh-demo",
 ]
 resolver = "2"

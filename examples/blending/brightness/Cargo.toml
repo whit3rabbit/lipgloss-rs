@@ -1,0 +1,14 @@
+[package]
+name = "brightness-demo"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Demo of color brightness utilities (lighten/darken) with lipgloss-rs"
+
+[dependencies]
+lipgloss.workspace = true

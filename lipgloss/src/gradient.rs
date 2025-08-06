@@ -5,12 +5,12 @@
 //! gradients in terminal user interfaces.
 
 use crate::color::Color;
-use palette::{FromColor, Luv, Mix, Srgb};
+use palette::{FromColor, Lab, Mix, Srgb};
 
 /// Creates a gradient of colors by blending two sRGB colors.
 ///
-/// The blending is done in the perceptually uniform CIE L*u*v* color space,
-/// which produces smooth and visually appealing transitions.
+/// The blending is done in the perceptually uniform CIE L*a*b* (CIELAB) color space,
+/// which produces smooth and visually appealing transitions and matches Go's implementation.
 ///
 /// # Arguments
 ///
@@ -34,8 +34,8 @@ use palette::{FromColor, Luv, Mix, Srgb};
 /// assert_eq!(colors.len(), 5);
 /// ```
 pub fn gradient_rgb(start: Srgb<u8>, end: Srgb<u8>, count: usize) -> Vec<Color> {
-    let start_luv = Luv::from_color(start.into_format());
-    let end_luv = Luv::from_color(end.into_format());
+    let start_lab = Lab::from_color(start.into_format());
+    let end_lab = Lab::from_color(end.into_format());
 
     (0..count)
         .map(|i| {
@@ -44,8 +44,8 @@ pub fn gradient_rgb(start: Srgb<u8>, end: Srgb<u8>, count: usize) -> Vec<Color> 
             } else {
                 0.0
             };
-            let blended_luv = start_luv.mix(end_luv, factor);
-            let blended_rgb = Srgb::from_color(blended_luv).into_format::<u8>();
+            let blended_lab = start_lab.mix(end_lab, factor);
+            let blended_rgb = Srgb::from_color(blended_lab).into_format::<u8>();
             Color::from(
                 format!(
                     "#{:02x}{:02x}{:02x}",
@@ -88,7 +88,7 @@ pub fn gradient(start_hex: &str, end_hex: &str, count: usize) -> Vec<Color> {
 /// Generates a 2D grid of colors using bilinear interpolation between four corner colors.
 ///
 /// This function creates a smooth 2D color field, perfect for generating color palettes
-/// or background effects. The blending is performed in the CIE L*u*v* color space.
+/// or background effects. The blending is performed in the CIE L*a*b* (CIELAB) color space.
 ///
 /// # Arguments
 ///
@@ -119,12 +119,12 @@ pub fn bilinear_interpolation_grid(
 ) -> Vec<Vec<Color>> {
     let (top_left, top_right, bottom_left, bottom_right) = corners;
 
-    let x0y0 = Luv::from_color(parse_hex_color(top_left).into_format());
-    let x1y0 = Luv::from_color(parse_hex_color(top_right).into_format());
-    let x0y1 = Luv::from_color(parse_hex_color(bottom_left).into_format());
-    let x1y1 = Luv::from_color(parse_hex_color(bottom_right).into_format());
+    let x0y0 = Lab::from_color(parse_hex_color(top_left).into_format());
+    let x1y0 = Lab::from_color(parse_hex_color(top_right).into_format());
+    let x0y1 = Lab::from_color(parse_hex_color(bottom_left).into_format());
+    let x1y1 = Lab::from_color(parse_hex_color(bottom_right).into_format());
 
-    let left_edge: Vec<Luv> = (0..y_steps)
+    let left_edge: Vec<Lab> = (0..y_steps)
         .map(|i| {
             let factor = if y_steps > 1 {
                 i as f32 / (y_steps - 1) as f32
@@ -135,7 +135,7 @@ pub fn bilinear_interpolation_grid(
         })
         .collect();
 
-    let right_edge: Vec<Luv> = (0..y_steps)
+    let right_edge: Vec<Lab> = (0..y_steps)
         .map(|i| {
             let factor = if y_steps > 1 {
                 i as f32 / (y_steps - 1) as f32
@@ -157,8 +157,8 @@ pub fn bilinear_interpolation_grid(
                     } else {
                         0.0
                     };
-                    let blended_luv = start_of_row.mix(end_of_row, factor);
-                    let blended_rgb = Srgb::from_color(blended_luv).into_format::<u8>();
+                    let blended_lab = start_of_row.mix(end_of_row, factor);
+                    let blended_rgb = Srgb::from_color(blended_lab).into_format::<u8>();
                     Color::from(
                         format!(
                             "#{:02x}{:02x}{:02x}",

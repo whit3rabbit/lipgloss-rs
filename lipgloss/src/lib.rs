@@ -106,6 +106,7 @@
 pub const NO_TAB_CONVERSION: i32 = -1;
 
 pub mod align;
+pub mod blending;
 pub mod border;
 pub mod color;
 pub mod gradient;
@@ -119,6 +120,7 @@ pub mod utils;
 pub mod whitespace;
 
 pub use align::*;
+pub use blending::{blend_1d, blend_2d};
 pub use border::*;
 pub use color::*;
 pub use gradient::{bilinear_interpolation_grid, gradient, gradient_rgb};

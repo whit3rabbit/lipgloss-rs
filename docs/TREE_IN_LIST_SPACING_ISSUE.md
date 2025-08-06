@@ -142,39 +142,108 @@ if let Some(base) = &enum_base {
 - `golden_complex_sublist` - FAILS due to tree spacing
 - All other list tests - PASS with current 2-space list_indenter
 
-## Potential Solutions
+## Future Investigation Steps
 
-### Option 1: Dynamic Indenter
+### Immediate Next Steps
+1. **Investigate lipgloss Style.render() behavior**:
+   - Test if `padding_right(1)` is actually producing 1 space in nested contexts
+   - Check if color formatting affects padding behavior
+   - Compare standalone tree rendering vs nested-in-list rendering
+
+2. **Add targeted debug output**:
+   ```rust
+   // In renderer.rs around line 497
+   let rendered = base.render(&node_prefix);
+   eprintln!("DEBUG: prefix='{}', rendered='{}', len_diff={}", 
+            node_prefix.replace(' ', "·"), rendered.replace(' ', "·"), 
+            rendered.len() - node_prefix.len());
+   ```
+
+3. **Test Go behavior directly**:
+   ```bash
+   cd lipgloss-master && go test -v TestComplexSublist 2>&1 | grep -A 20 "tree within"
+   ```
+
+### Potential Solutions (Updated)
+
+#### Option A: Style Rendering Investigation
+Investigate why `Style::new().padding_right(1).render()` produces extra space in nested contexts.
+- **Pros**: Fixes root cause, maintains architecture  
+- **Cons**: May require lipgloss core changes
+- **Status**: Most promising approach based on testing
+
+#### Option B: Context-Aware Padding  
+Detect nested-in-list context and adjust padding accordingly.
+- **Pros**: Surgical fix, preserves all other behavior
+- **Cons**: Adds complexity, context detection needed
+- **Status**: Feasible but complex
+
+#### Option C: Zero Padding Override
+Remove `padding_right(1)` when tree is nested in list context.
+- **Pros**: Simple, direct fix
+- **Cons**: Diverges from Go implementation, context detection needed
+- **Status**: Fallback option
+
+#### Option D: Custom Tree Renderer
+Create specialized renderer for trees nested in lists.
+- **Pros**: Complete control over behavior
+- **Cons**: Code duplication, maintenance burden
+- **Status**: Over-engineered for the issue
+
+### Original Potential Solutions (Before Testing)
+
+#### Option 1: Dynamic Indenter ❌ TESTED
 Detect tree nodes and return 1 space for them, 2 spaces for others.
 **Problem**: Function signature doesn't provide node type information.
+**Result**: Function pointer comparison not possible in Rust
 
-### Option 2: Tree Override
+#### Option 2: Tree Override ✅ PARTIALLY IMPLEMENTED
 Have trees set their own indenter when nested in lists.
 **Problem**: Requires detecting nested context, complex.
+**Result**: Smart detection works, but enumerator styling still broken
 
-### Option 3: Renderer Adjustment
+#### Option 3: Renderer Adjustment ✅ IMPLEMENTED
 Modify tree renderer to handle 2-space list context.
 **Problem**: May break standalone tree rendering.
+**Result**: Fresh renderer prevents inheritance, but core spacing issue remains
 
-### Option 4: Test Adjustment
+#### Option 4: Test Adjustment ❌ NOT VIABLE
 Remove padding_right(1) from test tree.
 **Problem**: Diverges from Go implementation.
+**Result**: Not attempted, violates 1:1 implementation goal
 
 ## Debugging Steps for Future
 
-1. **Check spacing source**:
+1. **Check exact spacing source**:
    ```bash
-   cargo test -p lipgloss-list golden_complex_sublist -- --nocapture 2>&1 | grep "├──.*another"
+   cargo test -p lipgloss-list golden_complex_sublist 2>&1 | grep -o "├──.*another"
    ```
 
-2. **Verify indenter values**:
-   Add debug prints in `list_indenter()` and tree renderer
+2. **Verify style render output**:
+   Add debug prints in tree enumerator styling logic around `base.render()`
 
-3. **Test with different padding**:
-   Temporarily modify tree test's `padding_right()` value
+3. **Test with different padding values**:
+   ```rust
+   .enumerator_style(Style::new().foreground(color).padding_right(0)) // Test with 0
+   .enumerator_style(Style::new().foreground(color))                   // Test without padding
+   ```
 
-4. **Compare with Go**:
-   Run Go test and examine exact byte output with `xxd`
+4. **Compare Go vs Rust byte-by-byte**:
+   ```bash
+   # Go output
+   cd lipgloss-master && go test -v TestComplexSublist | xxd
+   # Rust output  
+   cargo test -p lipgloss-list golden_complex_sublist 2>&1 | xxd
+   ```
 
-## Status: UNRESOLVED
-The issue remains in `golden_complex_sublist` test. All other functionality works correctly.
+## Status: ARCHITECTURAL SUCCESS, STYLING ISSUE REMAINING
+
+### ✅ Major Progress Achieved
+- **18/19 tests passing** - All core list functionality working
+- **Architectural fix implemented** - Smart indentation prevents double-indent
+- **Root cause understood** - Issue isolated to enumerator style rendering
+
+### ❌ Remaining Work  
+- **1 specific issue**: Tree enumerator symbols get exactly 1 extra space
+- **Suspected cause**: `Style.render()` behavior with `padding_right(1)` in nested contexts
+- **Impact**: Only affects complex tree-in-list scenarios, not general usage

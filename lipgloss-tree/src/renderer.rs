@@ -601,10 +601,12 @@ impl Renderer {
                     // Trees nested in lists should not inherit the list's indenter to avoid double indentation.
                     let dummy_children = crate::children::NodeChildren::new();
                     let parent_indent_sample = indenter(&dummy_children, 0);
+                    #[allow(unused_variables)]
                     let is_parent_list_indenter = parent_indent_sample.trim() == "" && parent_indent_sample.len() == 2;
                     
                     let child_prefix = if let Some(child_indenter) = child.get_indenter() {
                         let child_indent_sample = child_indenter(&dummy_children, 0);
+                        #[allow(unused_variables)]
                         let is_child_tree_indenter = child_indent_sample.contains('│') || child_indent_sample.len() == 4;
                         
                         // DEBUG: uncomment for debugging tree indentation
