@@ -1,5 +1,5 @@
 [package]
-name = "tree-demo"
+name = "tree-demo-simple"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

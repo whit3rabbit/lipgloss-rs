@@ -10,3 +10,7 @@ description = "A tree component for terminal user interfaces, styled with Lip Gl
 [dependencies]
 lipgloss = { workspace = true }
 unicode-width = { workspace = true }
+
+[dev-dependencies]
+lipgloss-list = { path = "../lipgloss-list" }
+lipgloss-table = { path = "../lipgloss-table" }

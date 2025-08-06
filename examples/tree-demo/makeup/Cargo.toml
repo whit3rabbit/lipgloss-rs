@@ -1,0 +1,11 @@
+[package]
+name = "tree-demo-makeup"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+lipgloss.workspace = true
+lipgloss-tree.workspace = true

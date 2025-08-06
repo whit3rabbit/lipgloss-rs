@@ -208,17 +208,19 @@ fn golden_complex_sublist() {
     // A simple tree to embed: empty root with children, where the first child is a
     // single node with a multiline value so continuation lines are indented without
     // additional branch connectors, matching Go golden output.
-    let tree = Tree::new().child(vec![
-        Box::new(Tree::new().root("another\nmultine\nstring")) as Box<dyn Node>,
-        Box::new(Leaf::new("something", false)) as Box<dyn Node>,
-        Box::new(Tree::new().root("a subtree").child(vec![
-            Box::new(Leaf::new("yup", false)) as Box<dyn Node>,
-            Box::new(Leaf::new("many itens", false)) as Box<dyn Node>,
-            Box::new(Leaf::new("another", false)) as Box<dyn Node>,
-        ])) as Box<dyn Node>,
-        Box::new(Leaf::new("hallo", false)) as Box<dyn Node>,
-        Box::new(Leaf::new("wunderbar!", false)) as Box<dyn Node>,
-    ]);
+    let tree = Tree::new()
+        .enumerator_style(lipgloss::Style::new().foreground(lipgloss::Color::from("212")).padding_right(1))
+        .child(vec![
+            Box::new(Tree::new().root("another\nmultine\nstring")) as Box<dyn Node>,
+            Box::new(Leaf::new("something", false)) as Box<dyn Node>,
+            Box::new(Tree::new().root("a subtree").child(vec![
+                Box::new(Leaf::new("yup", false)) as Box<dyn Node>,
+                Box::new(Leaf::new("many itens", false)) as Box<dyn Node>,
+                Box::new(Leaf::new("another", false)) as Box<dyn Node>,
+            ])) as Box<dyn Node>,
+            Box::new(Leaf::new("hallo", false)) as Box<dyn Node>,
+            Box::new(Leaf::new("wunderbar!", false)) as Box<dyn Node>,
+        ]);
 
     // Another tree from free text
     let free_text_tree =

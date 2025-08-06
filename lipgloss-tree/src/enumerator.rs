@@ -89,8 +89,8 @@ pub fn rounded_enumerator(children: &dyn Children, index: usize) -> String {
 /// ```
 pub fn default_indenter(children: &dyn Children, index: usize) -> String {
     if children.length() > 0 && children.length() - 1 == index {
-        "    ".to_string()
+        "    ".to_string()  // 4 spaces for last item (to align with "└── " width)
     } else {
-        "│   ".to_string()
+        "│   ".to_string()   // 3 spaces after │ (to align with "├── " width)
     }
 }

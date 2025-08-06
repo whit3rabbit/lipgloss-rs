@@ -143,7 +143,7 @@ fn test_tree_custom_enumerators_and_styles() {
     set_color_profile(ColorProfileKind::ANSI);
     // Mimic TestTreeCustom: customize enumerator/indenter and styles (blue arrows, red items)
     // Use bright blue (94) and bright red (91) to match golden output
-    let enum_style = lipgloss::Style::new().foreground(lipgloss::Color::from("94"));
+    let enum_style = lipgloss::Style::new().foreground(lipgloss::Color::from("94")).padding_right(1);
     let item_style = lipgloss::Style::new().foreground(lipgloss::Color::from("91"));
 
     let tr = Tree::new()
@@ -159,7 +159,7 @@ fn test_tree_custom_enumerators_and_styles() {
         .item_style(item_style)
         .enumerator_style(enum_style)
         .enumerator(|_, _| "->".to_string())
-        .indenter(|_, _| "-> ".to_string());
+        .indenter(|_, _| "->".to_string());
 
     assert_matches_golden(&format!("{}", tr), "TestTreeCustom.golden");
 }
@@ -274,10 +274,18 @@ fn test_root_style() {
 }
 
 #[test]
-#[ignore]
 fn test_embed_list_within_tree() {
-    // TODO: port once lipgloss-list is wired in
-    let _ = read_golden("TestEmbedListWithinTree.golden");
+    use lipgloss_list::{self as list, List};
+    let list1 = List::new()
+        .items(vec!["A", "B", "C"])
+        .enumerator(list::arabic);
+    let list2 = List::new()
+        .items(vec!["1", "2", "3"])
+        .enumerator(list::alphabet);
+    let t1 = Tree::new()
+        .child(child![format!("{}", list1)])
+        .child(child![format!("{}", list2)]);
+    assert_matches_golden(&format!("{}", t1), "TestEmbedListWithinTree.golden");
 }
 
 #[test]
@@ -400,8 +408,17 @@ fn test_add_item_with_and_without_root() {
 }
 
 #[test]
-#[ignore]
 fn test_tree_table() {
-    // TODO: port once lipgloss-table is wired in
-    let _ = read_golden("TestTreeTable.golden");
+    use lipgloss_table::Table;
+    let tbl = Table::new()
+        .width(20)
+        .style_func(|_, _| lipgloss::Style::new().padding(0, 1, 0, 1))
+        .headers(vec!["Foo", "Bar"])
+        .row(vec!["Qux", "Baz"])
+        .row(vec!["Qux", "Baz"])
+        .render();
+
+    let tr = Tree::new()
+        .child(child!["Foo", root("Bar").child(child!["Baz", "Baz", tbl, "Baz"]), "Qux"]);
+    assert_matches_golden(&format!("{}", tr), "TestTreeTable.golden");
 }

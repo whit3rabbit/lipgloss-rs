@@ -127,7 +127,6 @@ impl Style {
             if content_width > 0 {
                 let mut wrapped_lines: Vec<String> = Vec::new();
                 for line in rendered.split('\n') {
-                    // FIX: Call the new word wrap function instead of hard wrap.
                     let mut parts = Self::word_wrap_ansi_aware(line, content_width as usize);
                     if parts.is_empty() {
                         parts.push(String::new());
@@ -327,7 +326,7 @@ impl Style {
         // Final styling pass - "Layout First, Styling Second" approach
         let target_width = self.get_width();
         let target_height = self.get_height();
-        let has_bg = self.is_set(BACKGROUND_KEY) || self.get_attr(ATTR_COLOR_WHITESPACE);
+        let _has_bg = self.is_set(BACKGROUND_KEY) || self.get_attr(ATTR_COLOR_WHITESPACE);
 
         // Determine if we need to render any borders. If so, we must not early-return.
         let has_borders =
@@ -681,8 +680,13 @@ impl Style {
             let prefix = format!("\x1b[{}m", sgr.join(";"));
             let suffix = "\x1b[0m";
 
-            if has_bg {
-                // For background colors, style the entire canvas including whitespace
+            let style_whole_line = self.get_background().is_some()
+                || self.get_color_whitespace()
+                || (self.get_underline() && self.get_underline_spaces())
+                || (self.get_strikethrough() && self.get_strikethrough_spaces());
+
+            if style_whole_line {
+                // For background colors or styled spaces, style the entire canvas
                 final_lines = final_lines
                     .into_iter()
                     .map(|line| format!("{}{}{}", prefix, line, suffix))

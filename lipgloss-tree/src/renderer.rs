@@ -1,8 +1,6 @@
 use crate::children::Children;
 use crate::{default_enumerator, default_indenter, Enumerator, Indenter, Node, StyleFunc};
-use lipgloss::security::safe_repeat;
-use lipgloss::{height, join_horizontal, join_vertical, width, Style, LEFT, TOP};
-use std::cmp;
+use lipgloss::{height, join_horizontal, join_vertical, Style, LEFT, TOP};
 
 // Minimal Children impl to synthesize enumerator glyphs with controlled length/index
 struct DummyChildren {
@@ -60,6 +58,7 @@ impl Default for TreeStyle {
 }
 
 /// Renderer is responsible for rendering trees.
+#[derive(Clone)]
 pub struct Renderer {
     style: TreeStyle,
     enumerator: Enumerator,
@@ -104,7 +103,6 @@ impl Renderer {
         // eprintln!("RENDER_START: root={}, prefix='{}', prefix_len={}", root, prefix.replace('\n', "\\n"), prefix.len());
 
         let mut strs = Vec::new();
-        let mut max_len = 0;
         let children = node.children();
         // Prefer per-node overrides for enumerator/indenter when present, otherwise use renderer config
         let enumerator = node.get_enumerator().copied().unwrap_or(self.enumerator);
@@ -197,33 +195,7 @@ impl Renderer {
         // Helper to detect built-in branch glyphs
         let is_branch = |s: &str| s == "├──" || s == "└──" || s == "╰──";
 
-        // Calculate max prefix width using the exact same logic as the rendering phase
-        #[allow(clippy::needless_range_loop)]
-        for i in 0..filtered_children.length() {
-            let user_pref = enumerator(&vis_children, i);
-            let is_custom_enum = !is_branch(&user_pref);
-            let mut node_prefix = if !is_custom_enum {
-                let dc = DummyChildren { len: 2 };
-                if is_last_vec[i] {
-                    enumerator(&dc, 1)
-                } else {
-                    enumerator(&dc, 0)
-                }
-            } else {
-                user_pref.clone()
-            };
-            // Apply base style to the enumerator result
-            if let Some(base) = &self.style.enumerator_base {
-                node_prefix = base.render(&node_prefix);
-            }
-            // Apply the enumerator style function to the prefix (matching Go behavior exactly)
-            let enum_style_result = (self.style.enumerator_func)(&vis_children, i);
-            node_prefix = enum_style_result.render(&node_prefix);
-            let current_width = width(&node_prefix);
-            max_len = cmp::max(current_width, max_len);
-            // Debug: uncomment for debugging
-            // eprintln!("DEBUG: i={}, children_len={}, enumerator='{}', styled='{}', width={}, max_len={}", i, vis_children.length(), user_pref.replace('\n', "\\n"), node_prefix.replace('\n', "\\n"), current_width, max_len);
-        }
+        // Skip width calculation entirely - Go doesn't seem to do alignment padding
 
         // Render children
         let mut last_display_indent = String::new();
@@ -266,6 +238,7 @@ impl Renderer {
                     .cloned()
                     .or_else(|| self.style.item_base.clone());
 
+
                 // Compute indent: for visible children use indenter(filtered, display_idx);
                 // for container (empty value) nodes, reuse the last visible indent so nested
                 // content attaches under the previous item.
@@ -274,16 +247,9 @@ impl Renderer {
                 } else {
                     last_display_indent.clone()
                 };
-                let mut indent = raw_indent.clone();
-                // Apply enumerator base style to the indenter so custom indicators (e.g. "->")
-                // carry the same styling as branch markers, matching Go behavior.
-                if let Some(base) = &enum_base {
-                    indent = base.render(&indent);
-                }
-                // Apply the enumerator style function to the indenter (matching Go behavior)
-                // But only in specific contexts - in Go this happens in the multiline extension logic
-                // For now, keep the original logic to avoid breaking other tests
-                // TODO: investigate when exactly this should be applied
+                let indent = raw_indent.clone();
+                // Don't apply base style to indent here - we'll apply it to the final prefix instead
+                // This prevents double styling when we use the indent in extension logic
 
                 // Compute enumerator only for visible children
                 // Base branch according to position in overall visual sequence
@@ -299,38 +265,53 @@ impl Renderer {
                 } else {
                     user_pref.clone()
                 };
-                // Style branch with base style
+                // FIXED: Apply either base style OR function style, not both
+                // This is the key fix for the double-spacing issue
                 if let Some(base) = &enum_base {
+                    // If we have a base style, use it instead of the function
+                    // This matches Go's behavior where EnumeratorStyle() replaces the function
                     node_prefix = base.render(&node_prefix);
+                } else {
+                    // Only apply the function style if no base style is set
+                    let enum_style_result = enum_style_func(&vis_children, idx);
+                    let enum_lead = enum_style_result.render("");
+                    // Check if enum_lead is just padding (whitespace only) vs actual set_string content
+                    if !enum_lead.is_empty() && !enum_lead.trim().is_empty() {
+                        // This is a true set_string style with actual content (like "+")
+                        // Apply default padding to the tree structure first, then combine
+                        let default_styled = Style::new().padding_right(1).render(&node_prefix);
+                        if !enum_lead.ends_with(' ') {
+                            node_prefix = format!("{} {}", enum_lead, default_styled);
+                        } else {
+                            node_prefix = format!("{}{}", enum_lead, default_styled);
+                        }
+                    } else {
+                        // Apply the style function to the tree structure directly (padding-only or no style)
+                        node_prefix = enum_style_result.render(&node_prefix);
+                    }
                 }
-                // Apply the enumerator style function to the prefix (matching Go behavior exactly)
-                let enum_style_result = enum_style_func(&vis_children, idx);
-                node_prefix = enum_style_result.render(&node_prefix);
-                let prefix_width = width(&node_prefix);
-                if max_len > prefix_width {
-                    let padding = safe_repeat(' ', max_len - prefix_width);
-                    node_prefix = format!("{}{}", padding, node_prefix);
-                }
+                // Note: Alignment padding disabled - Go doesn't align prefixes to same width
                 // Debug: uncomment for debugging
                 // eprintln!("RENDER: idx={}, prefix='{}', width={}, max_len={}, final='{}'", idx, node_prefix.replace('\n', "\\n"), prefix_width, max_len, node_prefix.replace('\n', "\\n"));
-                // Apply base then func styles for item, with composable lead
+                // Apply item styling: base style OR function style, not both
                 let mut item = child.value();
                 if let Some(base) = &item_base {
                     item = base.render(&item);
-                }
-                // Get the item style function result
-                let item_style_result = item_style_func(&vis_children, idx);
-                let item_lead = item_style_result.render("");
-                if !item_lead.is_empty() {
-                    // This is a style with a string set via set_string (like Go's SetString)
-                    if !item_lead.ends_with(' ') {
-                        item = format!("{} {}", item_lead, item);
-                    } else {
-                        item = format!("{}{}", item_lead, item);
-                    }
                 } else {
-                    // Apply the style function to the item directly
-                    item = item_style_result.render(&item);
+                    // Only apply function style if no base style is set
+                    let item_style_result = item_style_func(&vis_children, idx);
+                    let item_lead = item_style_result.render("");
+                    if !item_lead.is_empty() {
+                        // This is a style with a string set via set_string (like Go's SetString)
+                        if !item_lead.ends_with(' ') {
+                            item = format!("{} {}", item_lead, item);
+                        } else {
+                            item = format!("{}{}", item_lead, item);
+                        }
+                    } else {
+                        // Apply the style function to the item directly
+                        item = item_style_result.render(&item);
+                    }
                 }
                 let mut multiline_prefix = prefix.to_string();
 
@@ -340,13 +321,8 @@ impl Renderer {
 
                 // Extend node prefix if item is taller
                 while item_height > node_prefix_height {
-                    // Apply enum style to indent when extending (matching Go behavior)
-                    // But only if the indent is purely whitespace AND short (less than default length)
-                    let extension_indent = if indent.trim().is_empty() && indent.len() < 4 {
-                        enum_style_func(&vis_children, idx).render(&indent)
-                    } else {
-                        indent.clone()
-                    };
+                    // Use raw indent for multiline extension - no styling needed
+                    let extension_indent = indent.clone();
                     node_prefix = join_vertical(LEFT, &[&node_prefix, &extension_indent]);
                     node_prefix_height = height(&node_prefix);
                 }
@@ -370,17 +346,50 @@ impl Renderer {
                 if child.children().length() > 0 {
                     // Even if the child has an empty value (container), we still need to
                     // indent its children so they appear nested under the current item.
-                    // Apply enum style to indent for child prefix (matching Go behavior)
-                    // But only if the indent is purely whitespace AND short (less than default length)
-                    let styled_indent_for_child = if indent.trim().is_empty() && indent.len() < 4 {
-                        enum_style_func(&vis_children, idx).render(&indent)
+                    // Use raw indent without enum styling - indenter provides the spacing structure
+                    // The enum styling should only apply to tree branch glyphs, not indenter spacing
+                    let styled_indent = indent.clone();
+                    let child_prefix = format!("{}{}", prefix, styled_indent);
+                    
+                    // Detect if child has style overrides (indicating it's a styled tree vs plain container)
+                    let has_style_overrides = child.get_enumerator_style().is_some() 
+                        || child.get_item_style().is_some()
+                        || child.get_enumerator_style_func().is_some()
+                        || child.get_item_style_func().is_some();
+                    
+                    let mut child_renderer = if has_style_overrides {
+                        // Child has style overrides: use tree defaults for behavior but child styles
+                        Renderer::new()
                     } else {
-                        indent.clone()
+                        // Child has no overrides: inherit parent's behavior
+                        Renderer::new()
+                            .enumerator(self.enumerator)  
+                            .indenter(self.indenter)
                     };
-                    let child_prefix = format!("{}{}", prefix, styled_indent_for_child);
-                    // Debug: uncomment for debugging
-                    // eprintln!("CHILD_PREFIX: prefix='{}', indent='{}', child_prefix='{}'", prefix.replace('\n', "\\n"), styled_indent_for_child.replace('\n', "\\n"), child_prefix.replace('\n', "\\n"));
-                    let mut child_output = self.render(child, false, &child_prefix);
+                    
+                    // Apply any explicit functional overrides from the child node itself
+                    if let Some(e) = child.get_enumerator() {
+                        child_renderer = child_renderer.enumerator(*e);
+                    }
+                    if let Some(i) = child.get_indenter() {
+                        child_renderer = child_renderer.indenter(*i);
+                    }
+                    
+                    // For style functions, use tree defaults unless child has specific overrides
+                    // Children should inherit parent styles when they don't have their own
+                    let style = TreeStyle {
+                        enumerator_func: child.get_enumerator_style_func().copied().unwrap_or(|_, _| Style::new().padding_right(1)),
+                        item_func: child.get_item_style_func().copied().unwrap_or(|_, _| Style::new()),
+                        root: Style::default(),
+                        // Inherit parent's base styles if child doesn't have overrides
+                        enumerator_base: child.get_enumerator_style().cloned()
+                            .or_else(|| self.style.enumerator_base.clone()),
+                        item_base: child.get_item_style().cloned()
+                            .or_else(|| self.style.item_base.clone()),
+                    };
+                    child_renderer = child_renderer.style(style);
+                    
+                    let mut child_output = child_renderer.render(child, false, &child_prefix);
                     // If this child is an unnamed container and there are later siblings that
                     // will render visible lines, ensure the container's last visible branch uses
                     // the mid-branch glyph to visually continue the vertical line across

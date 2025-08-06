@@ -238,53 +238,45 @@ impl Style {
         }
 
         let mut lines = Vec::new();
+        let tokens = Self::tokenize_with_breakpoints(text, &[' ']);
+        if tokens.is_empty() {
+            // If there are no tokens, return the original text as a single line
+            // This handles empty or whitespace-only strings.
+            return vec![text.to_string()];
+        }
+
         let mut current_line = String::new();
         let mut current_width = 0;
-
-        // Tokenize by spaces to handle words, preserving ANSI sequences
-        let tokens = Self::tokenize_with_breakpoints(text, &[' ']);
 
         for token in tokens {
             let token_width = crate::width_visible(&token);
 
-            if token == " " {
-                // Handle spaces between words
-                if current_width > 0 && current_width < width {
-                    current_line.push(' ');
-                    current_width += 1;
+            if token_width > width {
+                // Token is too long, must be hard-wrapped
+                if !current_line.is_empty() {
+                    lines.push(current_line);
+                }
+                let mut hard_wrapped = Self::hard_wrap_ansi_aware(&token, width);
+                if !hard_wrapped.is_empty() {
+                    current_line = hard_wrapped.pop().unwrap();
+                    lines.extend(hard_wrapped);
+                    current_width = crate::width_visible(&current_line);
+                } else {
+                    current_line = String::new();
+                    current_width = 0;
                 }
                 continue;
             }
 
-            if current_width + token_width > width && current_width > 0 {
-                // Current token doesn't fit, wrap to new line
-                lines.push(current_line.clone());
-                current_line.clear();
-                current_width = 0;
-            }
-
-            if token_width > width {
-                // Token is longer than line width, hard-wrap it
-                if !current_line.is_empty() {
-                    lines.push(current_line.clone());
-                    current_line.clear();
-                }
-
-                let mut wrapped_token = Self::hard_wrap_ansi_aware(&token, width);
-                if !wrapped_token.is_empty() {
-                    // Add all but the last part of the hard-wrapped token to lines
-                    lines.extend(wrapped_token.drain(..wrapped_token.len() - 1));
-                    // The last part becomes the new current line
-                    current_line = wrapped_token.pop().unwrap_or_default();
-                    current_width = crate::width_visible(&current_line);
-                }
+            if !current_line.is_empty() && current_width + token_width > width {
+                lines.push(current_line);
+                current_line = token;
+                current_width = token_width;
             } else {
-                // Token fits, add to current line
                 current_line.push_str(&token);
                 current_width += token_width;
             }
         }
-
         if !current_line.is_empty() {
             lines.push(current_line);
         }

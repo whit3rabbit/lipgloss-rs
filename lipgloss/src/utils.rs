@@ -1025,23 +1025,15 @@ pub fn which_sides_color<C: TerminalColor + Clone>(values: &[C]) -> (C, C, C, C,
         }
         _ => {
             // Invalid: 0 values or more than 4 values
-            // We need to return some default, but we can't create a default TerminalColor
-            // So we'll use a different approach - return the first element or panic
-            if values.is_empty() {
-                // For empty input, we can't provide a meaningful default
-                // The caller should check `ok` before using the values
-                panic!("Cannot provide default color for empty input")
-            } else {
-                // For too many values, return the first 4 (or repeat first as needed)
-                let default = values[0].clone();
-                (
-                    default.clone(),
-                    default.clone(),
-                    default.clone(),
-                    default,
-                    false,
-                )
-            }
+            // The caller should handle len==0. For len>=5, return default-like values and ok=false.
+            let default = values[0].clone();
+            (
+                default.clone(),
+                default.clone(),
+                default.clone(),
+                default,
+                false,
+            )
         }
     }
 }

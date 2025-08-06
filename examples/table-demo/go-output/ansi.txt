@@ -1,0 +1,5 @@
+╭───────────┬─────────────╮
+│Bubble Tea │Milky        │
+│Milk Tea   │Also milky   │
+│Actual milk│Milky as well│
+╰───────────┴─────────────╯

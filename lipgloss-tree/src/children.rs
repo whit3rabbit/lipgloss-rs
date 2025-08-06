@@ -43,6 +43,7 @@ pub trait Node: fmt::Display + CloneNode {
         None
     }
 
+
     /// Returns a base item Style (applied before item style func) if any.
     fn get_item_style(&self) -> Option<&Style> {
         None
@@ -400,6 +401,7 @@ impl Tree {
     pub fn get_enumerator_style(&self) -> Option<&Style> {
         self.enumerator_style.as_ref()
     }
+
 }
 
 impl Default for Tree {
@@ -454,6 +456,7 @@ impl Node for Tree {
         self.indenter.as_ref()
     }
 
+
     fn get_item_style(&self) -> Option<&Style> {
         self.item_style.as_ref()
     }
@@ -483,9 +486,7 @@ impl fmt::Display for Tree {
                 .enumerator_style_func
                 .unwrap_or(|_, _| Style::new().padding_right(1)),
             item_func: self.item_style_func.unwrap_or(|_, _| Style::new()),
-            // Root style if any
             root: self.root_style.clone().unwrap_or_default(),
-            // Base styles
             enumerator_base: self.enumerator_style.clone(),
             item_base: self.item_style.clone(),
         };

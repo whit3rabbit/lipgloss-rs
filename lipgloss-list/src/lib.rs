@@ -304,7 +304,7 @@ impl fmt::Display for List {
 /// List indenter that produces no fixed indentation; alignment is handled by
 /// the renderer's enumerator column padding.
 fn list_indenter(_children: &dyn Children, _index: usize) -> String {
-    "  ".to_string()
+    " ".to_string()
 }
 
 // Go API compatibility aliases
