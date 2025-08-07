@@ -50,7 +50,7 @@ fn test_direct_ansi_codes() {
 
     // Test color "94" (bright blue)
     let color_94 = Color::from("94");
-    let token_94 = color_94.token(&lipgloss::renderer::default_renderer());
+    let token_94 = color_94.token(lipgloss::renderer::default_renderer());
     println!("Color '94' token: {}", token_94);
 
     let style_94 = Style::new().foreground(Color::from("94"));
@@ -59,7 +59,7 @@ fn test_direct_ansi_codes() {
 
     // Test color "91" (bright red)
     let color_91 = Color::from("91");
-    let token_91 = color_91.token(&lipgloss::renderer::default_renderer());
+    let token_91 = color_91.token(lipgloss::renderer::default_renderer());
     println!("Color '91' token: {}", token_91);
 
     let style_91 = Style::new().foreground(Color::from("91"));
@@ -146,9 +146,12 @@ fn test_color_conversion_behavior() {
     let mut best_idx = 0;
     let mut best_dist = u32::MAX;
     for (i, &(rr, gg, bb)) in ansi16_rgb.iter().enumerate() {
-        let dr = (hex_rgb.0 as i32 - rr as i32).abs() as u32;
-        let dg = (hex_rgb.1 as i32 - gg as i32).abs() as u32;
-        let db = (hex_rgb.2 as i32 - bb as i32).abs() as u32;
+        #[allow(clippy::unnecessary_cast)]
+        let dr = (hex_rgb.0 as i32 - rr as i32).unsigned_abs();
+        #[allow(clippy::unnecessary_cast)]
+        let dg = (hex_rgb.1 as i32 - gg as i32).unsigned_abs();
+        #[allow(clippy::unnecessary_cast)]
+        let db = (hex_rgb.2 as i32 - bb as i32).unsigned_abs();
         let dist = dr * dr + dg * dg + db * db;
         println!(
             "  Color {}: RGB({}, {}, {}) distance: {}",

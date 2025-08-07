@@ -95,7 +95,7 @@ mod blend_1d_tests {
             rgba_color(0, 255, 0, 255),
             rgba_color(0, 0, 255, 255),
         ];
-        let expected = vec![
+        let expected = [
             rgba_color(255, 0, 0, 255),
             rgba_color(0, 255, 0, 255),
             rgba_color(0, 255, 0, 255),
@@ -113,7 +113,7 @@ mod blend_1d_tests {
     #[test]
     fn test_black_to_white_5_steps() {
         let stops = vec![rgba_color(0, 0, 0, 255), rgba_color(255, 255, 255, 255)];
-        let expected = vec![
+        let expected = [
             rgba_color(0, 0, 0, 255),
             rgba_color(59, 59, 59, 255),
             rgba_color(119, 119, 119, 255),
@@ -137,7 +137,7 @@ mod blend_1d_tests {
             rgba_color(0, 255, 0, 255),
             rgba_color(0, 0, 255, 255),
         ];
-        let expected = vec![
+        let expected = [
             rgba_color(255, 0, 0, 255),
             rgba_color(255, 255, 0, 255),
             rgba_color(255, 255, 0, 255),
@@ -163,7 +163,7 @@ mod blend_1d_tests {
             rgba_color(255, 255, 0, 255),
             rgba_color(0, 0, 0, 255),
         ];
-        let expected = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 255, 0, 255)];
+        let expected = [rgba_color(255, 0, 0, 255), rgba_color(0, 255, 0, 255)];
 
         let got = blend_1d(2, stops);
         assert_eq!(got.len(), expected.len());
@@ -176,7 +176,7 @@ mod blend_1d_tests {
     #[test]
     fn test_insufficient_stops() {
         let stops = vec![rgba_color(255, 0, 0, 255)];
-        let expected = vec![
+        let expected = [
             rgba_color(255, 0, 0, 255),
             rgba_color(255, 0, 0, 255),
             rgba_color(255, 0, 0, 255),
@@ -193,7 +193,7 @@ mod blend_1d_tests {
     #[test]
     fn test_insufficient_steps() {
         let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
-        let expected = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
+        let expected = [rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
 
         let got = blend_1d(1, stops); // Should be clamped to 2
         assert_eq!(got.len(), expected.len());
@@ -332,7 +332,7 @@ mod color_utility_tests {
             let (r, g, b, _a) = color.rgba(); // Use regular rgba() for backward compatibility test
             let actual = (r << 16) + (g << 8) + b; // No bit shifting since rgba() returns 8-bit now
             assert_eq!(
-                actual as u32, expected,
+                actual, expected,
                 "Input '{}': expected 0x{:06X}, got 0x{:06X}",
                 input, expected, actual
             );

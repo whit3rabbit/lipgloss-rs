@@ -90,7 +90,7 @@ fn multiline_items_do_not_repeat_enumerator() {
 
     // First line has A. hello
     assert!(
-        lines.get(0).is_some() && lines[0].contains("A. hello"),
+        !lines.is_empty() && lines[0].contains("A. hello"),
         "first line should contain 'A. hello'\n{}",
         out
     );
