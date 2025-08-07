@@ -508,18 +508,18 @@ let t = Table::new()
 println!("{}", t);
 ```
 
-This can produce complex tables like this:
+This can produce complex tables with proper Unicode support and CJK character handling:
 
 ```
-┌────────────┬────────────┬───────────┬───────────┬────────────┬───────────────┐
-│ #          │ NAME       │ TYPE 1    │ TYPE 2    │ JAPANESE   │ OFFICIAL ROM. │
-├────────────┼────────────┼───────────┼───────────┼────────────┼───────────────┤
-│ 1          │ Bulbasaur  │ Grass     │ Poison    │ フシギダネ │ Fushigidane   │
-│ 2          │ Ivysaur    │ Grass     │ Poison    │ フシギソウ │ Fushigisou    │
-│ 3          │ Venusaur   │ Grass     │ Poison    │ フシギバナ │ Fushigibana   │
-│ 4          │ Charmander │ Fire      │           │ ヒトカゲ   │ Hitokage      │
-│ 25         │ Pikachu    │ Electric  │           │ ピカチュウ │ Pikachu       │
-└────────────┴────────────┴───────────┴───────────┴────────────┴───────────────┘
+┌────┬─────────────┬──────────┬──────────┬──────────┬───────────────┐
+│ #  │ NAME        │ TYPE 1   │ TYPE 2   │ JAPANESE │ OFFICIAL ROM. │
+├────┼─────────────┼──────────┼──────────┼──────────┼───────────────┤
+│ 1  │ Bulbasaur   │ Grass    │ Poison   │フシギダネ│ Fushigidane   │
+│ 2  │ Ivysaur     │ Grass    │ Poison   │フシギソウ│ Fushigisou    │
+│ 3  │ Venusaur    │ Grass    │ Poison   │フシギバナ│ Fushigibana   │
+│ 4  │ Charmander  │ Fire     │          │ヒトカゲ  │ Hitokage      │
+│ 25 │ Pikachu     │ Electric │          │ピカチュウ│ Pikachu       │
+└────┴─────────────┴──────────┴──────────┴──────────┴───────────────┘
 ```
 
 ### Lists
