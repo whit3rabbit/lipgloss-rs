@@ -8,14 +8,14 @@ This is a Rust port of the excellent Go library of the same name, [**lipgloss**]
 
 `lipgloss-rs` takes an expressive, declarative approach to terminal rendering. Users familiar with CSS will feel at home.
 
-## 🎯 **Go Parity Achieved**
+## Go Parity Achieved
 
-✅ **Automatic Width/Height Constraints** - Act as minimum dimensions with intelligent padding  
-✅ **Solid Background Blocks** - Background colors fill entire constrained areas  
-✅ **Perfect Text Alignment** - Applied line-by-line for precise visual positioning  
-✅ **Smart Border Extension** - Borders automatically encompass full dimensions  
-✅ **Vertical Alignment Support** - TOP, CENTER, BOTTOM distribution for height constraints  
-✅ **Memory Safety** - Built-in protection against dimension attacks and malicious input
+- **Automatic Width/Height Constraints**: Act as minimum dimensions with intelligent padding
+- **Solid Background Blocks**: Background colors fill entire constrained areas
+- **Perfect Text Alignment**: Applied line-by-line for precise visual positioning
+- **Smart Border Extension**: Borders automatically encompass full dimensions
+- **Vertical Alignment Support**: TOP, CENTER, BOTTOM distribution for height constraints
+- **Memory Safety**: Built-in protection against dimension attacks and malicious input
 
 ```rust
 use lipgloss::{Style, Color, rounded_border, CENTER};
@@ -40,6 +40,40 @@ fn main() {
 }
 ```
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Colors](#colors)
+  - [ANSI 16 & 256 Colors](#ansi-16--256-colors)
+  - [True Color](#true-color)
+  - [Adaptive & Complete Colors](#adaptive--complete-colors)
+- [Gradients & Color Interpolation](#gradients--color-interpolation)
+- [Formatting](#formatting)
+  - [Inline Formatting](#inline-formatting)
+  - [Block-Level Formatting](#block-level-formatting)
+- [Layout](#layout)
+  - [Width and Height](#width-and-height)
+  - [Alignment](#alignment)
+  - [Borders](#borders)
+  - [Joining Paragraphs](#joining-paragraphs)
+  - [Placing Text](#placing-text)
+- [Tabs](#tabs)
+- [Advanced Styling](#advanced-styling)
+  - [Copying Styles](#copying-styles)
+  - [Inheritance](#inheritance)
+  - [Unsetting Rules](#unsetting-rules)
+  - [Custom Renderers](#custom-renderers)
+- [Components](#components)
+  - [Tables](#tables)
+  - [Lists](#lists)
+  - [Trees](#trees)
+- [Security & Performance](#security--performance)
+- [Running the Examples](#running-the-examples)
+- [Bubbletea Integration](#bubbletea-integration)
+- [Under the Hood](#under-the-hood)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
+
 ## Installation
 
 Add `lipgloss` and its component crates to your `Cargo.toml`:
@@ -56,43 +90,38 @@ lipgloss-tree = "0.0.6"
 
 `lipgloss-rs` supports the following color profiles:
 
-### ANSI 16 colors (4-bit)
+### ANSI 16 & 256 Colors
+
+`lipgloss-rs` supports ANSI 16 colors (4-bit) and 256 colors (8-bit).
 
 ```rust
 use lipgloss::Color;
 
+// ANSI 16
 let magenta = Color::from("5");
 let red = Color::from("9");
-let light_blue = Color::from("12");
-```
 
-### ANSI 256 Colors (8-bit)
-
-```rust
-use lipgloss::Color;
-
+// ANSI 256
 let aqua = Color::from("86");
 let hot_pink = Color::from("201");
-let orange = Color::from("202");
 ```
 
-### True Color (16,777,216 colors; 24-bit)
+### True Color
+
+`lipgloss-rs` also supports True Color (16,777,216 colors; 24-bit).
 
 ```rust
 use lipgloss::Color;
 
 let blue = Color::from("#0000FF");
 let green = Color::from("#04B575");
-let dark_gray = Color::from("#3C3C3C");
 ```
-
-...as well as a 1-bit ASCII profile, which is black and white only.
 
 The terminal's color profile will be automatically detected, and colors outside the gamut of the current palette will be automatically coerced to their closest available value.
 
-### Adaptive Colors
+### Adaptive & Complete Colors
 
-You can also specify color options for light and dark backgrounds:
+You can also specify color options for light and dark backgrounds. The terminal's background color will be automatically detected and the appropriate color will be chosen at runtime.
 
 ```rust
 use lipgloss::AdaptiveColor;
@@ -100,11 +129,28 @@ use lipgloss::AdaptiveColor;
 let color = AdaptiveColor::new("#0000FF", "#000099"); // Light, Dark
 ```
 
-The terminal's background color will automatically be detected and the appropriate color will be chosen at runtime.
+For more precise control, `CompleteColor` allows you to specify exact values for each color profile, and `CompleteAdaptiveColor` combines both concepts.
 
-### Gradients & Color Interpolation
+```rust
+use lipgloss::{CompleteColor, CompleteAdaptiveColor};
 
-`lipgloss-rs` includes advanced gradient capabilities using perceptually uniform color spaces for smooth, visually appealing transitions:
+let color = CompleteAdaptiveColor {
+    light: CompleteColor {
+        true_color: "#d7ffae".to_string(),
+        ansi256: "193".to_string(),
+        ansi: "11".to_string(),
+    },
+    dark: CompleteColor {
+        true_color: "#d75fee".to_string(),
+        ansi256: "163".to_string(),
+        ansi: "5".to_string(),
+    },
+};
+```
+
+## Gradients & Color Interpolation
+
+`lipgloss-rs` includes advanced gradient capabilities using perceptually uniform color spaces for smooth, visually appealing transitions.
 
 #### Basic Gradients
 
@@ -164,53 +210,18 @@ for (i, ch) in text.chars().enumerate() {
 ![Brightness Demo](examples/blending/brightness/demo.png)
 
 ```rust
-use lipgloss::{Style, Color};
+use lipgloss::{Style, Color, lighten};
 
 // Brightness adjustments and color mixing
 let base_color = Color::from("#7C3AED");
 let bright_style = Style::new()
-    .background(base_color.lighten(0.3))
+    .background(lighten(&base_color, 0.3))
     .foreground(Color::from("#FFFFFF"));
 ```
 
-### Complete Colors
+## Formatting
 
-`CompleteColor` specifies exact values for True Color, ANSI256, and ANSI color profiles.
-
-```rust
-use lipgloss::CompleteColor;
-
-let color = CompleteColor {
-    true_color: "#0000FF".to_string(),
-    ansi256: "86".to_string(),
-    ansi: "5".to_string(),
-};
-```
-
-Automatic color degradation will not be performed in this case and it will be based on the color specified.
-
-### Complete Adaptive Colors
-
-You can use `CompleteColor` with `AdaptiveColor` to specify the exact values for light and dark backgrounds without automatic color degradation.
-
-```rust
-use lipgloss::CompleteAdaptiveColor;
-
-let color = CompleteAdaptiveColor {
-    light: CompleteColor {
-        true_color: "#d7ffae".to_string(),
-        ansi256: "193".to_string(),
-        ansi: "11".to_string(),
-    },
-    dark: CompleteColor {
-        true_color: "#d75fee".to_string(),
-        ansi256: "163".to_string(),
-        ansi: "5".to_string(),
-    },
-};
-```
-
-## Inline Formatting
+### Inline Formatting
 
 `lipgloss-rs` supports the usual ANSI text formatting options:
 
@@ -227,7 +238,7 @@ let style = Style::new()
     .reverse(true);
 ```
 
-## Block-Level Formatting
+### Block-Level Formatting
 
 `lipgloss-rs` also supports rules for block-level formatting:
 
@@ -246,9 +257,10 @@ let style = Style::new()
     .margin_top(2)
     .margin_right(4)
     .margin_bottom(2)
-    .margin_left(4);```
+    .margin_left(4);
+```
 
-There are also shorthand methods for margins and padding, which follow a similar format to CSS:
+There are also shorthand methods for margins and padding, which follow CSS conventions:
 
 ```rust
 // 2 cells on all sides
@@ -256,30 +268,23 @@ Style::new().padding(2, 2, 2, 2);
 
 // 2 cells on the top and bottom, 4 cells on the left and right
 Style::new().margin(2, 4, 2, 4);
-
-// 1 cell on the top, 4 cells on the sides, 2 cells on the bottom
-Style::new().padding(1, 4, 2, 4);
-
-// Clockwise, starting from the top: 2 cells on the top, 4 on the right, 3 on
-// the bottom, and 1 on the left
-Style::new().margin(2, 4, 3, 1);
 ```
 
-## Aligning Text
-
-You can align paragraphs of text to the left, right, or center.
+Sometimes you want to enforce rules on a style. This is where `inline`, `max_width`, and `max_height` come in handy:
 
 ```rust
-use lipgloss::{Style, LEFT, RIGHT, CENTER};
+use lipgloss::Style;
 
-let style = Style::new()
-    .width(24)
-    .align_horizontal(LEFT)   // align it left
-    .align_horizontal(RIGHT)  // no wait, align it right
-    .align_horizontal(CENTER); // just kidding, align it in the center
+// Force rendering onto a single line, ignoring margins, padding, and borders.
+let some_style = Style::new().inline(true);
+
+// Limit rendering to a 5x5 cell block
+let block_style = Style::new().max_width(5).max_height(5);
 ```
 
-## Width and Height
+## Layout
+
+### Width and Height
 
 Setting a minimum width and height is simple and straightforward.
 
@@ -293,9 +298,9 @@ let style = Style::new()
     .foreground(Color::from("63"));
 ```
 
-## Perfect Text Alignment (Go Parity)
+### Alignment
 
-Text alignment now works line-by-line for precise visual positioning, exactly like the Go implementation.
+You can align paragraphs of text to the left, right, or center. Text alignment now works line-by-line for precise visual positioning, exactly like the Go implementation.
 
 ```rust
 use lipgloss::{Style, Color, LEFT, RIGHT, CENTER, TOP, BOTTOM};
@@ -317,90 +322,16 @@ let vertical_demo = Style::new()
     .height(8)
     .background(Color::from("#FF6B6B"))
     .foreground(Color::from("#FFFFFF"))
-    .align_vertical(BOTTOM)        // Content positioned at bottom
-    .align_horizontal(RIGHT)       // Content aligned right
+    .align_vertical(BOTTOM)
+    .align_horizontal(RIGHT)
     .color_whitespace(true);
 
 println!("{}", vertical_demo.render("Bottom-right\naligned content"));
-
-// Combined alignment with borders
-let perfect_alignment = Style::new()
-    .width(35)
-    .height(7)
-    .align_horizontal(CENTER)
-    .align_vertical(CENTER)
-    .border_style(lipgloss::rounded_border())
-    .border(true, true, true, true)
-    .border_foreground(Color::from("63"))
-    .background(Color::from("#F0F0F0"))
-    .color_whitespace(true);
-
-println!("{}", perfect_alignment.render("Perfectly centered\nmulti-line content\nwith auto-extending borders"));
 ```
 
-## Security & Performance (Rust Advantages)
+### Borders
 
-The Rust implementation includes built-in safety features and performance optimizations beyond the original Go version:
-
-```rust
-use lipgloss::{Style, Color, security::validate_dimension};
-
-// Automatic dimension validation prevents memory exhaustion attacks
-let safe_style = Style::new()
-    .width(user_width)      // Automatically clamped to safe limits (max 10,000)
-    .height(user_height)    // Automatically clamped to safe limits (max 10,000)
-    .background(Color::from("#FF6B6B"));
-
-// Built-in memory budget enforcement (50MB limit)
-let output = safe_style.render(&potentially_large_content);
-
-// Optional explicit validation for extra safety
-let validated_width = validate_dimension(untrusted_input, "width");
-let extra_safe = Style::new().width(validated_width);
-```
-
-## Enforcing Rules
-
-Sometimes, such as when developing a component, you want to make sure style definitions respect their intended purpose in the UI. This is where `inline` and `max_width`, and `max_height` come in:
-
-```rust
-use lipgloss::Style;
-
-// Force rendering onto a single line, ignoring margins, padding, and borders.
-let some_style = Style::new().inline(true);
-println!("{}", some_style.render("yadda yadda"));
-
-// Also limit rendering to five cells
-let constrained_style = Style::new().inline(true).max_width(5);
-println!("{}", constrained_style.render("yadda yadda"));
-
-// Limit rendering to a 5x5 cell block
-let block_style = Style::new().max_width(5).max_height(5);
-println!("{}", block_style.render("yadda yadda"));
-```
-
-**Key Safety Features:**
-- 🛡️ **Dimension validation** - Prevents memory exhaustion from large width/height values
-- 🔒 **Safe string operations** - Bounded repetition functions prevent runaway allocations  
-- 🚫 **ANSI sequence limits** - Protection against malicious escape sequences
-- ⚡ **Performance optimized** - 10-100x faster style comparisons, efficient rendering pipeline
-
-## Tabs
-
-The tab character (`\t`) is rendered differently in different terminals (often as 8 spaces, sometimes 4). Because of this inconsistency, `lipgloss-rs` converts tabs to 4 spaces at render time. This behavior can be changed on a per-style basis, however:
-
-```rust
-use lipgloss::{Style, NO_TAB_CONVERSION};
-
-let style = Style::new(); // tabs will render as 4 spaces, the default
-let style = style.tab_width(2);    // render tabs as 2 spaces
-let style = style.tab_width(0);    // remove tabs entirely
-let style = style.tab_width(NO_TAB_CONVERSION); // leave tabs intact
-```
-
-## Smart Borders (Auto-Extending)
-
-Borders now automatically extend to encompass the full constrained dimensions, including automatic padding:
+Borders now automatically extend to encompass the full constrained dimensions, including automatic padding.
 
 ```rust
 use lipgloss::{normal_border, rounded_border, thick_border, block_border, Border, Style, Color, CENTER};
@@ -410,22 +341,8 @@ let style = Style::new()
     .border_style(normal_border())
     .border(true, true, true, true)
     .border_foreground(Color::from("63"))
-    .width(25)                    // Border extends to full width
-    .height(5);                   // Border extends to full height
-
-// Rounded border with background and alignment
-let fancy_style = Style::new()
-    .border_style(rounded_border())
-    .border(true, true, true, true)
-    .border_foreground(Color::from("228"))
-    .background(Color::from("63"))
-    .width(30)
-    .height(6)
-    .align_horizontal(CENTER)
-    .align_vertical(CENTER)
-    .color_whitespace(true);      // Solid background within border
-
-println!("{}", fancy_style.render("Centered with\nauto-extending border"));
+    .width(25)
+    .height(5);
 
 // Partial borders (top and left only) still respect constraints
 let partial_border = Style::new()
@@ -435,8 +352,13 @@ let partial_border = Style::new()
     .border_foreground(Color::from("201"))
     .width(20)
     .height(4);
+```
 
-// Make your own custom border
+You can also create your own custom borders.
+
+```rust
+use lipgloss::{Border, Style};
+
 let my_cute_border = Border::new(
     "._.:*:", "._.:*:", "|*", "|*", "*", "*", "*", "*",
     "*", "*", "*", "*", "*",
@@ -449,27 +371,59 @@ let custom_style = Style::new()
     .height(3);
 ```
 
-There are also shorthand functions for defining borders, which follow a similar pattern to the margin and padding shorthand functions.
+### Joining Paragraphs
+
+Horizontally and vertically joining paragraphs is a cinch.
 
 ```rust
-use lipgloss::{Style, thick_border, double_border};
+use lipgloss::{join_horizontal, join_vertical, TOP, CENTER};
 
-// Add a thick border to the top and bottom
-let style = Style::new()
-    .border_style(thick_border())
-    .border_top(true)
-    .border_bottom(true);
+let paragraph_a = "First";
+let paragraph_b = "Second\nLine";
+let paragraph_c = "Third";
 
-// Add a double border to the top and left sides. Rules are set clockwise from top.
-let style = Style::new()
-    .border_style(double_border())
-    .border_top(true)
-    .border_right(false)
-    .border_bottom(false)
-    .border_left(true);
+// Horizontally join three paragraphs along their top edges
+let joined_h = join_horizontal(TOP, &[paragraph_a, paragraph_b, paragraph_c]);
+
+// Vertically join two paragraphs along their center axes
+let joined_v = join_vertical(CENTER, &[paragraph_a, paragraph_b]);
 ```
 
-## Copying Styles
+### Placing Text
+
+Sometimes you’ll simply want to place a block of text in whitespace.
+
+```rust
+use lipgloss::{place, place_horizontal, place_vertical, CENTER, BOTTOM, RIGHT};
+
+let fancy_styled_paragraph = "I'm fancy.";
+
+// Center a paragraph horizontally in a space 80 cells wide.
+let block_h = place_horizontal(80, CENTER, fancy_styled_paragraph, &[]);
+
+// Place a paragraph at the bottom of a space 30 cells tall.
+let block_v = place_vertical(30, BOTTOM, fancy_styled_paragraph, &[]);
+
+// Place a paragraph in the bottom right corner of a 30x80 cell space.
+let block = place(30, 80, RIGHT, BOTTOM, fancy_styled_paragraph, &[]);
+```
+
+## Tabs
+
+The tab character (`\t`) is rendered differently in different terminals (often as 8 spaces, sometimes 4). Because of this inconsistency, `lipgloss-rs` converts tabs to 4 spaces at render time. This behavior can be changed on a per-style basis:
+
+```rust
+use lipgloss::{Style, NO_TAB_CONVERSION};
+
+let style = Style::new(); // tabs will render as 4 spaces, the default
+let style_2 = style.clone().tab_width(2);    // render tabs as 2 spaces
+let style_0 = style.clone().tab_width(0);    // remove tabs entirely
+let style_neg_1 = style.clone().tab_width(NO_TAB_CONVERSION); // leave tabs intact
+```
+
+## Advanced Styling
+
+### Copying Styles
 
 The builder pattern for `Style` returns a new, modified copy with each call. For an explicit copy, just use `.clone()`:
 
@@ -483,7 +437,7 @@ let copied_style = style.clone(); // this is a true copy
 let wild_style = style.blink(true); // this is also a new copy, with blink added
 ```
 
-## Inheritance
+### Inheritance
 
 Styles can inherit rules from other styles. When inheriting, only unset rules on the receiver are inherited.
 
@@ -501,7 +455,7 @@ let style_b = Style::new()
     .inherit(style_a);
 ```
 
-## Unsetting Rules
+### Unsetting Rules
 
 All rules can be unset:
 
@@ -515,206 +469,88 @@ let style = Style::new()
     .unset_background(); // never mind
 ```
 
-## Rendering
-
-Generally, you just call the `render(&str)` method on a `lipgloss::Style`:
-
-```rust
-use lipgloss::Style;
-
-let style = Style::new().bold(true).set_string("Hello,");
-println!("{}", style.render("kitty.")); // Hello, kitty.
-println!("{}", style.render("puppy.")); // Hello, puppy.
-```
-
 ### Custom Renderers
 
 Custom renderers allow you to render to a specific outputs. This is particularly important when you want to render to different outputs and correctly detect the color profile and dark background status for each, such as in a server-client situation.
 
-```rust
-use lipgloss::{Renderer, AdaptiveColor, Style};
+## Components
 
-fn my_little_handler(session: &mut SshSession) {
-    // Create a renderer for the client.
-    let renderer = Renderer::new(session);
+### Tables
 
-    // Create a new style on the renderer.
-    let style = renderer.new_style()
-        .background(AdaptiveColor::new("63", "228"));
-
-    // Render. The color profile and dark background state will be correctly detected.
-    session.write_string(&style.render("Heyyyyyyy"));
-}
-```
-
-## Utilities
-
-In addition to pure styling, `lipgloss-rs` also ships with some utilities to help assemble your layouts.
-
-### Joining Paragraphs
-
-Horizontally and vertically joining paragraphs is a cinch.
+`lipgloss-rs` ships with a table rendering component, `lipgloss-table`.
 
 ```rust
-use lipgloss::{join_horizontal, join_vertical, Position};
-
-let paragraph_a = "First";
-let paragraph_b = "Second\nLine";
-let paragraph_c = "Third";
-
-// Horizontally join three paragraphs along their bottom edges
-join_horizontal(Position::bottom(), &[paragraph_a, paragraph_b, paragraph_c]);
-
-// Vertically join two paragraphs along their center axes
-join_vertical(Position::center(), &[paragraph_a, paragraph_b]);
-
-// Horizontally join three paragraphs, with the shorter ones aligning 20%
-// from the top of the tallest
-join_horizontal(Position::relative(0.2), &[paragraph_a, paragraph_b, paragraph_c]);
-```
-
-### Measuring Width and Height
-
-Sometimes you’ll want to know the width and height of text blocks when building your layouts.
-
-```rust
-use lipgloss::{width, height, size, Style};
-
-// Render a block of text.
-let style = Style::new()
-    .width(40)
-    .padding(2, 2, 2, 2);
-let block = style.render("some long string");
-
-// Get the actual, physical dimensions of the text block.
-let w = width(&block);
-let h = height(&block);
-
-// Here's a shorthand function.
-let (w, h) = size(&block);
-```
-
-### Placing Text in Whitespace
-
-Sometimes you’ll simply want to place a block of text in whitespace.
-
-```rust
-use lipgloss::{place, place_horizontal, place_vertical, Position};
-
-let fancy_styled_paragraph = "I'm fancy.";
-
-// Center a paragraph horizontally in a space 80 cells wide.
-let block = place_horizontal(80, Position::center(), fancy_styled_paragraph, &[]);
-
-// Place a paragraph at the bottom of a space 30 cells tall.
-let block = place_vertical(30, Position::bottom(), fancy_styled_paragraph, &[]);
-
-// Place a paragraph in the bottom right corner of a 30x80 cell space.
-let block = place(30, 80, Position::right(), Position::bottom(), fancy_styled_paragraph, &[]);
-```
-
-## Rendering Tables
-
-`lipgloss-rs` ships with a table rendering sub-package, `lipgloss-table`.
-
-```rust
-use lipgloss::{Style, Color, Position, thick_border};
+use lipgloss::{style::Style, thick_border, Color, CENTER};
 use lipgloss_table::{Table, HEADER_ROW};
 
-let purple = Color::from("99");
-let gray = Color::from("245");
-let light_gray = Color::from("241");
-
-let rows = vec![
+let data: Vec<Vec<&str>> = vec![
     vec!["Chinese", "您好", "你好"],
     vec!["Japanese", "こんにちは", "やあ"],
+    vec!["Russian", "Здравствуйте", "Привет"],
 ];
 
 let style_func = move |row: i32, col: usize| -> Style {
     // Styles...
-    // ...
-    Style::new() // placeholder
+    Style::new().padding(0, 1, 0, 1) // placeholder
 };
 
-let mut t = Table::new()
+let t = Table::new()
     .border(thick_border())
-    .border_style(Style::new().foreground(purple))
-    .style_func_boxed(style_func)
+    .border_style(Style::new().foreground(Color::from("238")))
+    .wrap(true)
     .headers(vec!["LANGUAGE", "FORMAL", "INFORMAL"])
-    .rows(rows);
+    .width(46)
+    .rows(data)
+    .style_func_boxed(style_func);
 
-t = t.row(vec!["English", "You look absolutely fabulous.", "How's it going?"]);
 println!("{}", t);
 ```
 
-![Table Example]
+This can produce complex tables like this:
 
-### Table Borders
+```
+┌────────────┬────────────┬───────────┬───────────┬────────────┬───────────────┐
+│ #          │ NAME       │ TYPE 1    │ TYPE 2    │ JAPANESE   │ OFFICIAL ROM. │
+├────────────┼────────────┼───────────┼───────────┼────────────┼───────────────┤
+│ 1          │ Bulbasaur  │ Grass     │ Poison    │ フシギダネ │ Fushigidane   │
+│ 2          │ Ivysaur    │ Grass     │ Poison    │ フシギソウ │ Fushigisou    │
+│ 3          │ Venusaur   │ Grass     │ Poison    │ フシギバナ │ Fushigibana   │
+│ 4          │ Charmander │ Fire      │           │ ヒトカゲ   │ Hitokage      │
+│ 25         │ Pikachu    │ Electric  │           │ ピカチュウ │ Pikachu       │
+└────────────┴────────────┴───────────┴───────────┴────────────┴───────────────┘
+```
 
-There are helpers to generate tables in markdown or ASCII style:
+### Lists
 
-#### Markdown Table
+`lipgloss-rs` ships with a list rendering component, `lipgloss-list`.
 
 ```rust
-use lipgloss::{Style, markdown_border};
-use lipgloss_table::Table;
-
-let t = Table::new()
-    .border_style(markdown_border())
-    .border_top(false)
-    .border_bottom(false);
-```
-
-```
-| LANGUAGE |    FORMAL    | INFORMAL  |
-|----------|--------------|-----------| 
-| Chinese  | Nǐn hǎo      | Nǐ hǎo    |
-| French   | Bonjour      | Salut     |
-| Russian  | Zdravstvuyte | Privet    |
-| Spanish  | Hola         | ¿Qué tal? |
-```
-
-#### ASCII Table
-
-```rust 
-use lipgloss::{Style, ascii_border};
-use lipgloss_table::Table;
-
-let t = Table::new().border_style(ascii_border());
-```
-
-```
-+----------+--------------+-----------+
-| LANGUAGE |    FORMAL    | INFORMAL  |
-+----------+--------------+-----------+
-| Chinese  | Nǐn hǎo      | Nǐ hǎo    |
-| French   | Bonjour      | Salut     |
-| Russian  | Zdravstvuyte | Privet    |
-| Spanish  | Hola         | ¿Qué tal? |
-+----------+--------------+-----------+
-```
-
-## Rendering Lists
-
-`lipgloss-rs` ships with a list rendering sub-package, `lipgloss-list`.
-
-```rust
-use lipgloss_list::{List, roman};
+use lipgloss_list::{roman, List};
 
 let l = List::new()
     .item("A")
-    .item_list(
-        List::new()
-            .item("Artichoke")
-    )
-    .item("B");
+    .item("B")
+    .item("C")
+    .item_list(List::new().items(vec!["D", "E", "F"]).enumerator(roman))
+    .item("G");
 
 println!("{}", l);
 ```
 
-## Rendering Trees
+Which produces:
+```
+• A
+• B
+• C
+    I. D
+   II. E
+  III. F
+• G
+```
 
-`lipgloss-rs` ships with a tree rendering sub-package, `lipgloss-tree`.
+### Trees
+
+`lipgloss-rs` ships with a tree rendering component, `lipgloss-tree`.
 
 ```rust
 use lipgloss_tree::{Leaf, Node, Tree};
@@ -726,12 +562,40 @@ let t = Tree::new().root(".")
             Tree::new().root("Linux")
                 .child(vec![
                     Box::new(Leaf::new("NixOS", false)) as Box<dyn Node>,
+                    Box::new(Leaf::new("Arch Linux (btw)", false)) as Box<dyn Node>,
                 ])
         ) as Box<dyn Node>,
     ]);
 
 println!("{}", t);
 ```
+Which produces:
+```
+.
+├── macOS
+└── Linux
+    ├── NixOS
+    └── Arch Linux (btw)
+```
+
+## Security & Performance
+
+The Rust implementation includes built-in safety features and performance optimizations beyond the original Go version:
+
+```rust
+use lipgloss::{Style, Color};
+
+// Automatic dimension validation prevents memory exhaustion attacks
+let safe_style = Style::new()
+    .width(99999)      // Automatically clamped to safe limits (max 10,000)
+    .height(99999)     // Automatically clamped to safe limits (max 10,000)
+    .background(Color::from("#FF6B6B"));
+```
+
+- **Dimension validation**: Prevents memory exhaustion from large width/height values.
+- **Safe string operations**: Bounded repetition functions prevent runaway allocations.
+- **ANSI sequence limits**: Protection against malicious escape sequences.
+- **Performance optimized**: 10-100x faster style comparisons, efficient rendering pipeline.
 
 ## Running the Examples
 
@@ -739,24 +603,19 @@ println!("{}", t);
 
 ```bash
 # Layout demo - comprehensive styling showcase
-cargo run --bin layout-demo
+cargo run --package layout-demo
 
-# List rendering demo
-cargo run --bin list-demo
+# Simple list rendering demo
+cargo run --package simple-list-demo
 
-# Simple styling example
-cargo run --bin simple-style
+# Languages table rendering demo
+cargo run --package table-demo-languages
 
-# Table rendering demo
-cargo run --bin table-demo
-
-# Tree rendering demo
-cargo run --bin tree-demo
+# Simple tree rendering demo
+cargo run --package tree-demo-simple
 ```
 
-Each demo demonstrates different aspects of the library, from basic styling to complex layouts with tables, lists, and trees.
-
-## What about `bubbletea-rs`?
+## Bubbletea Integration
 
 `lipgloss-rs` doesn't replace `bubbletea-rs`. Rather, it is an excellent companion. It was designed to make assembling terminal user interface views as simple and fun as possible so that you can focus on building your application instead of concerning yourself with low-level layout details.
 
@@ -766,10 +625,10 @@ In simple terms, you can use `lipgloss-rs` to help build your views in [`bubblet
 
 `lipgloss-rs` achieves exact Go parity through a carefully architected **"Layout First, Styling Second"** rendering pipeline:
 
-1. **Layout First**: Width/height constraints create the full-size canvas with alignment padding
-2. **Styling Second**: Colors and attributes are applied to the entire canvas for solid blocks
-3. **Smart Borders**: Borders automatically encompass the complete constrained dimensions
-4. **Margin Inheritance**: Margins inherit background colors when not explicitly set
+1.  **Layout First**: Width/height constraints create the full-size canvas with alignment padding
+2.  **Styling Second**: Colors and attributes are applied to the entire canvas for solid blocks
+3.  **Smart Borders**: Borders automatically encompass the complete constrained dimensions
+4.  **Margin Inheritance**: Margins inherit background colors when not explicitly set
 
 The implementation is built on `crossterm`, `unicode-width`, and `palette` libraries for terminal manipulation, ANSI-aware text operations, and advanced color management with perceptually uniform interpolation.
 
