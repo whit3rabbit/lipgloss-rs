@@ -210,28 +210,32 @@ fn test_memory_usage_bounds() {
 #[test]
 fn test_performance_regression_style_comparison() {
     // Test that the optimized style comparison is performant
+    // Use numeric ANSI color codes instead of names for consistent behavior
     let style1 = Style::new()
         .bold(true)
-        .foreground("red")
+        .foreground("1") // Red ANSI color
         .width(100)
         .padding(5, 5, 5, 5);
     let style2 = Style::new()
         .bold(true)
-        .foreground("red")
+        .foreground("1") // Red ANSI color
         .width(100)
         .padding(5, 5, 5, 5);
     let style3 = Style::new()
         .bold(true)
-        .foreground("blue")
+        .foreground("4") // Blue ANSI color
         .width(100)
         .padding(5, 5, 5, 5);
 
     // Pre-test assertion to ensure colors are actually different
     // This will help debug CI issues if color resolution is the problem
+    let fg1 = style1.get_foreground().map(|c| c.0.clone());
+    let fg3 = style3.get_foreground().map(|c| c.0.clone());
+    
     assert_ne!(
-        style1.get_foreground().map(|c| c.0.clone()),
-        style3.get_foreground().map(|c| c.0.clone()),
-        "Colors should be different: red vs blue"
+        fg1, fg3,
+        "Colors should be different: 1 (red) vs 4 (blue). Got {:?} vs {:?}",
+        fg1, fg3
     );
 
     let start = Instant::now();
