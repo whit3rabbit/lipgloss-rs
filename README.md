@@ -1,5 +1,7 @@
 # lipgloss-rs
 
+[![CI](https://github.com/whit3rabbit/lipgloss-rs/workflows/CI/badge.svg)](https://github.com/whit3rabbit/lipgloss-rs/actions)
+
 A port of [lipgloss](https://github.com/charmbracelet/lipgloss) to Rust which are style definitions for nice terminal layouts.
 
 ![Rust Layout Demo](examples/layout-demo/demo.png)
