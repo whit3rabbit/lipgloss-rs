@@ -48,8 +48,29 @@ jobs:
       - name: Run clippy
         run: cargo clippy --lib --tests --all-features -- -D warnings
 
-      - name: Publish to crates.io
-        run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Publish core lipgloss crate
+        run: cargo publish -p lipgloss --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Wait for lipgloss to be available
+        run: sleep 30
+
+      - name: Publish lipgloss-tree crate
+        run: cargo publish -p lipgloss-tree --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Publish lipgloss-table crate
+        run: cargo publish -p lipgloss-table --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Wait for dependencies to be available
+        run: sleep 30
+
+      - name: Publish lipgloss-list crate
+        run: cargo publish -p lipgloss-list --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
