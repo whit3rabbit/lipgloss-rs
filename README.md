@@ -189,6 +189,27 @@ let color = CompleteColor {
 
 Automatic color degradation will not be performed in this case and it will be based on the color specified.
 
+### Complete Adaptive Colors
+
+You can use `CompleteColor` with `AdaptiveColor` to specify the exact values for light and dark backgrounds without automatic color degradation.
+
+```rust
+use lipgloss::CompleteAdaptiveColor;
+
+let color = CompleteAdaptiveColor {
+    light: CompleteColor {
+        true_color: "#d7ffae".to_string(),
+        ansi256: "193".to_string(),
+        ansi: "11".to_string(),
+    },
+    dark: CompleteColor {
+        true_color: "#d75fee".to_string(),
+        ansi256: "163".to_string(),
+        ansi: "5".to_string(),
+    },
+};
+```
+
 ## Inline Formatting
 
 `lipgloss-rs` supports the usual ANSI text formatting options:
@@ -233,9 +254,43 @@ There are also shorthand methods for margins and padding, which follow a similar
 // 2 cells on all sides
 Style::new().padding(2, 2, 2, 2);
 
+// 2 cells on the top and bottom, 4 cells on the left and right
+Style::new().margin(2, 4, 2, 4);
+
+// 1 cell on the top, 4 cells on the sides, 2 cells on the bottom
+Style::new().padding(1, 4, 2, 4);
+
 // Clockwise, starting from the top: 2 cells on the top, 4 on the right, 3 on
 // the bottom, and 1 on the left
 Style::new().margin(2, 4, 3, 1);
+```
+
+## Aligning Text
+
+You can align paragraphs of text to the left, right, or center.
+
+```rust
+use lipgloss::{Style, LEFT, RIGHT, CENTER};
+
+let style = Style::new()
+    .width(24)
+    .align_horizontal(LEFT)   // align it left
+    .align_horizontal(RIGHT)  // no wait, align it right
+    .align_horizontal(CENTER); // just kidding, align it in the center
+```
+
+## Width and Height
+
+Setting a minimum width and height is simple and straightforward.
+
+```rust
+use lipgloss::{Style, Color};
+
+let style = Style::new()
+    .set_string("What's for lunch?")
+    .width(24)
+    .height(32)
+    .foreground(Color::from("63"));
 ```
 
 ## Perfect Text Alignment (Go Parity)
@@ -304,11 +359,44 @@ let validated_width = validate_dimension(untrusted_input, "width");
 let extra_safe = Style::new().width(validated_width);
 ```
 
+## Enforcing Rules
+
+Sometimes, such as when developing a component, you want to make sure style definitions respect their intended purpose in the UI. This is where `inline` and `max_width`, and `max_height` come in:
+
+```rust
+use lipgloss::Style;
+
+// Force rendering onto a single line, ignoring margins, padding, and borders.
+let some_style = Style::new().inline(true);
+println!("{}", some_style.render("yadda yadda"));
+
+// Also limit rendering to five cells
+let constrained_style = Style::new().inline(true).max_width(5);
+println!("{}", constrained_style.render("yadda yadda"));
+
+// Limit rendering to a 5x5 cell block
+let block_style = Style::new().max_width(5).max_height(5);
+println!("{}", block_style.render("yadda yadda"));
+```
+
 **Key Safety Features:**
 - 🛡️ **Dimension validation** - Prevents memory exhaustion from large width/height values
 - 🔒 **Safe string operations** - Bounded repetition functions prevent runaway allocations  
 - 🚫 **ANSI sequence limits** - Protection against malicious escape sequences
 - ⚡ **Performance optimized** - 10-100x faster style comparisons, efficient rendering pipeline
+
+## Tabs
+
+The tab character (`\t`) is rendered differently in different terminals (often as 8 spaces, sometimes 4). Because of this inconsistency, `lipgloss-rs` converts tabs to 4 spaces at render time. This behavior can be changed on a per-style basis, however:
+
+```rust
+use lipgloss::{Style, NO_TAB_CONVERSION};
+
+let style = Style::new(); // tabs will render as 4 spaces, the default
+let style = style.tab_width(2);    // render tabs as 2 spaces
+let style = style.tab_width(0);    // remove tabs entirely
+let style = style.tab_width(NO_TAB_CONVERSION); // leave tabs intact
+```
 
 ## Smart Borders (Auto-Extending)
 
@@ -359,6 +447,26 @@ let custom_style = Style::new()
     .border(true, true, true, true)
     .width(22)
     .height(3);
+```
+
+There are also shorthand functions for defining borders, which follow a similar pattern to the margin and padding shorthand functions.
+
+```rust
+use lipgloss::{Style, thick_border, double_border};
+
+// Add a thick border to the top and bottom
+let style = Style::new()
+    .border_style(thick_border())
+    .border_top(true)
+    .border_bottom(true);
+
+// Add a double border to the top and left sides. Rules are set clockwise from top.
+let style = Style::new()
+    .border_style(double_border())
+    .border_top(true)
+    .border_right(false)
+    .border_bottom(false)
+    .border_left(true);
 ```
 
 ## Copying Styles
@@ -416,7 +524,28 @@ use lipgloss::Style;
 
 let style = Style::new().bold(true).set_string("Hello,");
 println!("{}", style.render("kitty.")); // Hello, kitty.
-println!("{}", style.render("puppy.")); // Hello, puppy.```
+println!("{}", style.render("puppy.")); // Hello, puppy.
+```
+
+### Custom Renderers
+
+Custom renderers allow you to render to a specific outputs. This is particularly important when you want to render to different outputs and correctly detect the color profile and dark background status for each, such as in a server-client situation.
+
+```rust
+use lipgloss::{Renderer, AdaptiveColor, Style};
+
+fn my_little_handler(session: &mut SshSession) {
+    // Create a renderer for the client.
+    let renderer = Renderer::new(session);
+
+    // Create a new style on the renderer.
+    let style = renderer.new_style()
+        .background(AdaptiveColor::new("63", "228"));
+
+    // Render. The color profile and dark background state will be correctly detected.
+    session.write_string(&style.render("Heyyyyyyy"));
+}
+```
 
 ## Utilities
 
@@ -438,6 +567,10 @@ join_horizontal(Position::bottom(), &[paragraph_a, paragraph_b, paragraph_c]);
 
 // Vertically join two paragraphs along their center axes
 join_vertical(Position::center(), &[paragraph_a, paragraph_b]);
+
+// Horizontally join three paragraphs, with the shorter ones aligning 20%
+// from the top of the tallest
+join_horizontal(Position::relative(0.2), &[paragraph_a, paragraph_b, paragraph_c]);
 ```
 
 ### Measuring Width and Height
@@ -515,6 +648,51 @@ println!("{}", t);
 ```
 
 ![Table Example]
+
+### Table Borders
+
+There are helpers to generate tables in markdown or ASCII style:
+
+#### Markdown Table
+
+```rust
+use lipgloss::{Style, markdown_border};
+use lipgloss_table::Table;
+
+let t = Table::new()
+    .border_style(markdown_border())
+    .border_top(false)
+    .border_bottom(false);
+```
+
+```
+| LANGUAGE |    FORMAL    | INFORMAL  |
+|----------|--------------|-----------| 
+| Chinese  | Nǐn hǎo      | Nǐ hǎo    |
+| French   | Bonjour      | Salut     |
+| Russian  | Zdravstvuyte | Privet    |
+| Spanish  | Hola         | ¿Qué tal? |
+```
+
+#### ASCII Table
+
+```rust 
+use lipgloss::{Style, ascii_border};
+use lipgloss_table::Table;
+
+let t = Table::new().border_style(ascii_border());
+```
+
+```
++----------+--------------+-----------+
+| LANGUAGE |    FORMAL    | INFORMAL  |
++----------+--------------+-----------+
+| Chinese  | Nǐn hǎo      | Nǐ hǎo    |
+| French   | Bonjour      | Salut     |
+| Russian  | Zdravstvuyte | Privet    |
+| Spanish  | Hola         | ¿Qué tal? |
++----------+--------------+-----------+
+```
 
 ## Rendering Lists
 
