@@ -995,37 +995,218 @@ impl Tree {
         self
     }
 
-    /// Gets the enumerator for this tree.
+    /// Returns the custom enumerator function for this tree.
+    ///
+    /// The enumerator function generates branch characters (like ├──, └──) for
+    /// this tree's children based on their position in the collection. This
+    /// allows for custom tree rendering styles.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the enumerator function. Returns `Some` if a
+    /// custom enumerator has been set with [`Tree::enumerator`], or `None`
+    /// if using the default enumerator.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Tree;
+    ///
+    /// let tree = Tree::new()
+    ///     .enumerator(|children, i| {
+    ///         if i == children.length() - 1 {
+    ///             "└──".to_string()
+    ///         } else {
+    ///             "├──".to_string()
+    ///         }
+    ///     });
+    ///
+    /// assert!(tree.get_enumerator().is_some());
+    /// ```
     pub fn get_enumerator(&self) -> Option<&crate::Enumerator> {
         self.enumerator.as_ref()
     }
 
-    /// Gets the indenter for this tree.
+    /// Returns the custom indenter function for this tree.
+    ///
+    /// The indenter function generates indentation strings for nested content
+    /// under this tree's children. This determines how deeply nested items
+    /// are visually offset in the rendered output.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the indenter function. Returns `Some` if a
+    /// custom indenter has been set with [`Tree::indenter`], or `None`
+    /// if using the default indenter.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Tree;
+    ///
+    /// let tree = Tree::new()
+    ///     .indenter(|children, i| {
+    ///         if i == children.length() - 1 {
+    ///             "    ".to_string()  // Spaces for last child
+    ///         } else {
+    ///             "│   ".to_string()  // Vertical line continuing
+    ///         }
+    ///     });
+    ///
+    /// assert!(tree.get_indenter().is_some());
+    /// ```
     pub fn get_indenter(&self) -> Option<&crate::Indenter> {
         self.indenter.as_ref()
     }
 
-    /// Gets the root style.
+    /// Returns the styling configuration for this tree's root value.
+    ///
+    /// The root style is applied to the tree's main value when rendered,
+    /// allowing for custom colors, formatting, and visual effects on the
+    /// top-level tree node.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the root style. Returns `Some` if a custom
+    /// style has been set with [`Tree::root_style`], or `None` if using
+    /// the default (unstyled) appearance.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Tree;
+    /// use lipgloss::Style;
+    ///
+    /// let tree = Tree::new()
+    ///     .root("Project Root")
+    ///     .root_style(Style::new().bold(true).foreground("blue"));
+    ///
+    /// assert!(tree.get_root_style().is_some());
+    /// ```
     pub fn get_root_style(&self) -> Option<&Style> {
         self.root_style.as_ref()
     }
 
-    /// Gets the item style function.
+    /// Returns the dynamic styling function for this tree's child items.
+    ///
+    /// The item style function provides context-aware styling based on each
+    /// child's position within the tree. It receives the children collection
+    /// and the current child's index, allowing for complex styling logic.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the item style function. Returns `Some` if a
+    /// custom function has been set with [`Tree::item_style_func`], or `None`
+    /// if using the default (no dynamic styling).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Tree;
+    /// use lipgloss::Style;
+    ///
+    /// let tree = Tree::new()
+    ///     .child(vec!["Item 1".into(), "Item 2".into()])
+    ///     .item_style_func(|_children, i| {
+    ///         if i % 2 == 0 {
+    ///             Style::new().foreground("red")
+    ///         } else {
+    ///             Style::new().foreground("blue")
+    ///         }
+    ///     });
+    ///
+    /// assert!(tree.get_item_style_func().is_some());
+    /// ```
     pub fn get_item_style_func(&self) -> Option<&crate::StyleFunc> {
         self.item_style_func.as_ref()
     }
 
-    /// Gets the enumerator style function.
+    /// Returns the dynamic styling function for this tree's branch characters.
+    ///
+    /// The enumerator style function provides context-aware styling for the
+    /// branch characters (like ├──, └──) based on each child's position. It
+    /// receives the children collection and current index for styling decisions.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the enumerator style function. Returns `Some`
+    /// if a custom function has been set with [`Tree::enumerator_style_func`],
+    /// or `None` if using the default (no dynamic styling).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::{Tree, Children};
+    /// use lipgloss::Style;
+    ///
+    /// let tree = Tree::new()
+    ///     .child(vec!["First".into(), "Last".into()])
+    ///     .enumerator_style_func(|children, i| {
+    ///         if i == children.length() - 1 {
+    ///             Style::new().foreground("red")    // Last item
+    ///         } else {
+    ///             Style::new().foreground("green")  // Others
+    ///         }
+    ///     });
+    ///
+    /// assert!(tree.get_enumerator_style_func().is_some());
+    /// ```
     pub fn get_enumerator_style_func(&self) -> Option<&crate::StyleFunc> {
         self.enumerator_style_func.as_ref()
     }
 
-    /// Gets the item style.
+    /// Returns the base styling configuration for this tree's child items.
+    ///
+    /// The item style is applied to all child item content before any
+    /// dynamic style functions are applied. This provides a consistent
+    /// base appearance for all children in the tree.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the base item style. Returns `Some` if a
+    /// custom style has been set with [`Tree::item_style`], or `None`
+    /// if using the default (unstyled) appearance.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Tree;
+    /// use lipgloss::Style;
+    ///
+    /// let tree = Tree::new()
+    ///     .child(vec!["Item 1".into(), "Item 2".into()])
+    ///     .item_style(Style::new().foreground("green").italic(true));
+    ///
+    /// assert!(tree.get_item_style().is_some());
+    /// ```
     pub fn get_item_style(&self) -> Option<&Style> {
         self.item_style.as_ref()
     }
 
-    /// Gets the enumerator style.
+    /// Returns the base styling configuration for this tree's branch characters.
+    ///
+    /// The enumerator style is applied to all branch characters (like ├──, └──)
+    /// before any dynamic style functions are applied. This provides consistent
+    /// base styling for all tree branch elements.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the base enumerator style. Returns `Some` if a
+    /// custom style has been set with [`Tree::enumerator_style`], or `None`
+    /// if using the default (unstyled) appearance.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_tree::Tree;
+    /// use lipgloss::Style;
+    ///
+    /// let tree = Tree::new()
+    ///     .child(vec!["Item 1".into(), "Item 2".into()])
+    ///     .enumerator_style(Style::new().foreground("yellow").bold(true));
+    ///
+    /// assert!(tree.get_enumerator_style().is_some());
+    /// ```
     pub fn get_enumerator_style(&self) -> Option<&Style> {
         self.enumerator_style.as_ref()
     }

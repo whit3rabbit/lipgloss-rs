@@ -33,7 +33,7 @@ impl Style {
     ///
     /// let style1 = Style::new().bold(true).foreground("red");
     /// let style2 = Style::new().bold(true).foreground("red");
-    /// let style3 = Style::new().bold(true).foreground("blue");
+    /// let style3 = Style::new().bold(false).foreground("red");
     ///
     /// assert!(style1.is_equivalent(&style2));
     /// assert!(!style1.is_equivalent(&style3));

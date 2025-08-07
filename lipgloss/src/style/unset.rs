@@ -617,35 +617,137 @@ impl Style {
         self
     }
 
-    /// Clear the top margin
+    /// Removes the top margin from this style.
+    ///
+    /// This resets the top margin to 0 and removes it from the style's property set.
+    /// The content will no longer have spacing above it.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::Style;
+    ///
+    /// let style = Style::new()
+    ///     .margin(2, 1, 2, 1)  // top, right, bottom, left
+    ///     .unset_margin_top();  // Remove only top margin
+    ///
+    /// // Content will have 0 top margin, but keep right(1), bottom(2), left(1)
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_margin_top(mut self) -> Self {
         self.unset_prop(MARGIN_TOP_KEY);
         self.margin_top = 0;
         self
     }
 
-    /// Clear the right margin
+    /// Removes the right margin from this style.
+    ///
+    /// This resets the right margin to 0 and removes it from the style's property set.
+    /// The content will no longer have spacing to its right.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::Style;
+    ///
+    /// let style = Style::new()
+    ///     .margin(2, 3, 2, 1)  // top, right, bottom, left
+    ///     .unset_margin_right();  // Remove only right margin
+    ///
+    /// // Content will have 0 right margin, but keep top(2), bottom(2), left(1)
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_margin_right(mut self) -> Self {
         self.unset_prop(MARGIN_RIGHT_KEY);
         self.margin_right = 0;
         self
     }
 
-    /// Clear the bottom margin
+    /// Removes the bottom margin from this style.
+    ///
+    /// This resets the bottom margin to 0 and removes it from the style's property set.
+    /// The content will no longer have spacing below it.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::Style;
+    ///
+    /// let style = Style::new()
+    ///     .margin(2, 1, 3, 1)  // top, right, bottom, left
+    ///     .unset_margin_bottom();  // Remove only bottom margin
+    ///
+    /// // Content will have 0 bottom margin, but keep top(2), right(1), left(1)
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_margin_bottom(mut self) -> Self {
         self.unset_prop(MARGIN_BOTTOM_KEY);
         self.margin_bottom = 0;
         self
     }
 
-    /// Clear the left margin
+    /// Removes the left margin from this style.
+    ///
+    /// This resets the left margin to 0 and removes it from the style's property set.
+    /// The content will no longer have spacing to its left.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::Style;
+    ///
+    /// let style = Style::new()
+    ///     .margin(2, 1, 2, 3)  // top, right, bottom, left
+    ///     .unset_margin_left();  // Remove only left margin
+    ///
+    /// // Content will have 0 left margin, but keep top(2), right(1), bottom(2)
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_margin_left(mut self) -> Self {
         self.unset_prop(MARGIN_LEFT_KEY);
         self.margin_left = 0;
         self
     }
 
-    /// Clear the margin background color
+    /// Removes the margin background color from this style.
+    ///
+    /// This resets the margin background color to `None` and removes it from the style's
+    /// property set. Margin areas will use the terminal's default background color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::Style;
+    ///
+    /// let style = Style::new()
+    ///     .margin(2, 2, 2, 2)
+    ///     .margin_background("blue")
+    ///     .background("red")
+    ///     .unset_margin_background();  // Remove margin color, keep content color
+    ///
+    /// // Content will have red background, but margin areas use default color
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_margin_background(mut self) -> Self {
         self.unset_prop(MARGIN_BACKGROUND_KEY);
         self.margin_bg_color = None;
@@ -690,28 +792,116 @@ impl Style {
         self
     }
 
-    /// Clear the top border
+    /// Removes the top border from this style.
+    ///
+    /// This disables the top border edge and removes it from the style's property set.
+    /// The top edge of the content will not have a border.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_top(true)
+    ///     .border_bottom(true)
+    ///     .unset_border_top();  // Remove top border, keep bottom
+    ///
+    /// // Content will have bottom border but no top border
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_top(mut self) -> Self {
         self.unset_prop(BORDER_TOP_KEY);
         self.set_attr(ATTR_BORDER_TOP, false);
         self
     }
 
-    /// Clear the right border
+    /// Removes the right border from this style.
+    ///
+    /// This disables the right border edge and removes it from the style's property set.
+    /// The right edge of the content will not have a border.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_right(true)
+    ///     .border_left(true)
+    ///     .unset_border_right();  // Remove right border, keep left
+    ///
+    /// // Content will have left border but no right border
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_right(mut self) -> Self {
         self.unset_prop(BORDER_RIGHT_KEY);
         self.set_attr(ATTR_BORDER_RIGHT, false);
         self
     }
 
-    /// Clear the bottom border
+    /// Removes the bottom border from this style.
+    ///
+    /// This disables the bottom border edge and removes it from the style's property set.
+    /// The bottom edge of the content will not have a border.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_top(true)
+    ///     .border_bottom(true)
+    ///     .unset_border_bottom();  // Remove bottom border, keep top
+    ///
+    /// // Content will have top border but no bottom border
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_bottom(mut self) -> Self {
         self.unset_prop(BORDER_BOTTOM_KEY);
         self.set_attr(ATTR_BORDER_BOTTOM, false);
         self
     }
 
-    /// Clear the left border
+    /// Removes the left border from this style.
+    ///
+    /// This disables the left border edge and removes it from the style's property set.
+    /// The left edge of the content will not have a border.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_left(true)
+    ///     .border_right(true)
+    ///     .unset_border_left();  // Remove left border, keep right
+    ///
+    /// // Content will have right border but no left border
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_left(mut self) -> Self {
         self.unset_prop(BORDER_LEFT_KEY);
         self.set_attr(ATTR_BORDER_LEFT, false);
@@ -758,56 +948,232 @@ impl Style {
         self
     }
 
-    /// Clear the top border foreground color
+    /// Removes the top border foreground color from this style.
+    ///
+    /// This resets the top border foreground color to `None` and removes it from the
+    /// style's property set. The top border will use the default foreground color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_top_foreground("red")
+    ///     .border_bottom_foreground("blue")
+    ///     .unset_border_top_foreground();  // Remove top color, keep bottom
+    ///
+    /// // Top border uses default color, bottom border is blue
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_top_foreground(mut self) -> Self {
         self.unset_prop(BORDER_TOP_FOREGROUND_KEY);
         self.border_top_fg_color = None;
         self
     }
 
-    /// Clear the right border foreground color
+    /// Removes the right border foreground color from this style.
+    ///
+    /// This resets the right border foreground color to `None` and removes it from the
+    /// style's property set. The right border will use the default foreground color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_right_foreground("red")
+    ///     .border_left_foreground("blue")
+    ///     .unset_border_right_foreground();  // Remove right color, keep left
+    ///
+    /// // Right border uses default color, left border is blue
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_right_foreground(mut self) -> Self {
         self.unset_prop(BORDER_RIGHT_FOREGROUND_KEY);
         self.border_right_fg_color = None;
         self
     }
 
-    /// Clear the bottom border foreground color
+    /// Removes the bottom border foreground color from this style.
+    ///
+    /// This resets the bottom border foreground color to `None` and removes it from the
+    /// style's property set. The bottom border will use the default foreground color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_bottom_foreground("red")
+    ///     .border_top_foreground("blue")
+    ///     .unset_border_bottom_foreground();  // Remove bottom color, keep top
+    ///
+    /// // Bottom border uses default color, top border is blue
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_bottom_foreground(mut self) -> Self {
         self.unset_prop(BORDER_BOTTOM_FOREGROUND_KEY);
         self.border_bottom_fg_color = None;
         self
     }
 
-    /// Clear the left border foreground color
+    /// Removes the left border foreground color from this style.
+    ///
+    /// This resets the left border foreground color to `None` and removes it from the
+    /// style's property set. The left border will use the default foreground color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_left_foreground("red")
+    ///     .border_right_foreground("blue")
+    ///     .unset_border_left_foreground();  // Remove left color, keep right
+    ///
+    /// // Left border uses default color, right border is blue
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_left_foreground(mut self) -> Self {
         self.unset_prop(BORDER_LEFT_FOREGROUND_KEY);
         self.border_left_fg_color = None;
         self
     }
 
-    /// Clear the top border background color
+    /// Removes the top border background color from this style.
+    ///
+    /// This resets the top border background color to `None` and removes it from the
+    /// style's property set. The top border will use the default background color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_top_background("red")
+    ///     .border_bottom_background("blue")
+    ///     .unset_border_top_background();  // Remove top color, keep bottom
+    ///
+    /// // Top border uses default background, bottom border has blue background
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_top_background(mut self) -> Self {
         self.unset_prop(BORDER_TOP_BACKGROUND_KEY);
         self.border_top_bg_color = None;
         self
     }
 
-    /// Clear the right border background color
+    /// Removes the right border background color from this style.
+    ///
+    /// This resets the right border background color to `None` and removes it from the
+    /// style's property set. The right border will use the default background color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_right_background("red")
+    ///     .border_left_background("blue")
+    ///     .unset_border_right_background();  // Remove right color, keep left
+    ///
+    /// // Right border uses default background, left border has blue background
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_right_background(mut self) -> Self {
         self.unset_prop(BORDER_RIGHT_BACKGROUND_KEY);
         self.border_right_bg_color = None;
         self
     }
 
-    /// Clear the bottom border background color
+    /// Removes the bottom border background color from this style.
+    ///
+    /// This resets the bottom border background color to `None` and removes it from the
+    /// style's property set. The bottom border will use the default background color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_bottom_background("red")
+    ///     .border_top_background("blue")
+    ///     .unset_border_bottom_background();  // Remove bottom color, keep top
+    ///
+    /// // Bottom border uses default background, top border has blue background
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_bottom_background(mut self) -> Self {
         self.unset_prop(BORDER_BOTTOM_BACKGROUND_KEY);
         self.border_bottom_bg_color = None;
         self
     }
 
-    /// Clear the left border background color
+    /// Removes the left border background color from this style.
+    ///
+    /// This resets the left border background color to `None` and removes it from the
+    /// style's property set. The left border will use the default background color.
+    ///
+    /// # Returns
+    ///
+    /// Returns the modified `Style` instance for method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss::{Style, normal_border};
+    ///
+    /// let style = Style::new()
+    ///     .border_style(normal_border())
+    ///     .border_left_background("red")
+    ///     .border_right_background("blue")
+    ///     .unset_border_left_background();  // Remove left color, keep right
+    ///
+    /// // Left border uses default background, right border has blue background
+    /// let result = style.render("Hello World");
+    /// ```
     pub fn unset_border_left_background(mut self) -> Self {
         self.unset_prop(BORDER_LEFT_BACKGROUND_KEY);
         self.border_left_bg_color = None;

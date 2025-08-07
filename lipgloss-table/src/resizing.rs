@@ -11,6 +11,34 @@ pub struct ResizerColumn {
 }
 
 impl ResizerColumn {
+    /// Creates a new resizer column with the specified index.
+    ///
+    /// This constructor initializes a new `ResizerColumn` with default values for all fields
+    /// except the index. The column will start with zero dimensions and empty content,
+    /// which will be populated later during the resizing process.
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The zero-based column index within the table
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `ResizerColumn` instance with:
+    /// - `index` set to the provided value
+    /// - `min`, `max`, `median`, `x_padding`, `fixed_width` set to 0
+    /// - `rows` initialized as an empty vector
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lipgloss_table::resizing::ResizerColumn;
+    ///
+    /// let column = ResizerColumn::new(2);
+    /// assert_eq!(column.index, 2);
+    /// assert_eq!(column.min, 0);
+    /// assert_eq!(column.max, 0);
+    /// assert!(column.rows.is_empty());
+    /// ```
     pub fn new(index: usize) -> Self {
         Self {
             index,
@@ -40,7 +68,56 @@ pub struct Resizer {
 }
 
 impl Resizer {
-    /// Creates a new resizer.
+    /// Creates a new table resizer with the specified dimensions and content.
+    ///
+    /// This constructor initializes a complete resizing system that analyzes the provided
+    /// table content to determine optimal column widths and row heights. It processes
+    /// both headers and data rows, calculating statistical information (min, max, median)
+    /// for each column to enable intelligent resizing decisions.
+    ///
+    /// The resizer automatically:
+    /// - Combines headers and data rows into a unified structure
+    /// - Creates `ResizerColumn` instances for each column in the content
+    /// - Calculates width statistics (min, max, median) for each column
+    /// - Prepares the foundation for width optimization algorithms
+    ///
+    /// # Arguments
+    ///
+    /// * `table_width` - Target width for the entire table in characters
+    /// * `table_height` - Target height for the table (used for future height constraints)
+    /// * `headers` - Column headers as strings (can be empty if no headers)
+    /// * `rows` - Data rows, where each row is a vector of cell content strings
+    ///
+    /// # Returns
+    ///
+    /// Returns a new `Resizer` instance ready for width optimization, with:
+    /// - All content processed and stored in `all_rows`
+    /// - Column analysis completed with width statistics
+    /// - Default settings for wrapping and borders enabled
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lipgloss_table::resizing::Resizer;
+    ///
+    /// let headers = vec!["Name".to_string(), "Age".to_string()];
+    /// let rows = vec![
+    ///     vec!["Alice".to_string(), "30".to_string()],
+    ///     vec!["Bob".to_string(), "25".to_string()],
+    /// ];
+    ///
+    /// let resizer = Resizer::new(80, 24, headers, rows);
+    /// assert_eq!(resizer.table_width, 80);
+    /// assert_eq!(resizer.columns.len(), 2);
+    /// assert_eq!(resizer.all_rows.len(), 3); // headers + 2 data rows
+    /// ```
+    ///
+    /// # Notes
+    ///
+    /// - If `headers` is empty, only data rows will be processed
+    /// - The number of columns is determined by the row with the most cells
+    /// - Column width calculations use Unicode-aware width detection
+    /// - The resizer defaults to enabling text wrapping and column borders
     pub fn new(
         table_width: i32,
         table_height: i32,
