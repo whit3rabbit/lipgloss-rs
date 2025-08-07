@@ -5,7 +5,7 @@ use lipgloss_list::{alphabet, arabic, asterisk, bullet, dash, roman, List};
 
 fn testdata_path(rel: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../lipgloss-master/list/testdata")
+        .join("tests/testdata")
         .join(rel)
 }
 

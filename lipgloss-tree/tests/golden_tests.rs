@@ -14,9 +14,9 @@ macro_rules! child {
 
 fn golden_dir() -> PathBuf {
     // lipgloss-tree is at .../lipgloss-rs/lipgloss-tree
-    // golden testdata lives at .../lipgloss-rs/lipgloss-master/tree/testdata
+    // golden testdata lives at .../lipgloss-rs/lipgloss-tree/tests/testdata
     let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    here.join("../lipgloss-master/tree/testdata")
+    here.join("tests/testdata")
 }
 
 fn read_golden(rel: &str) -> String {

@@ -51,7 +51,7 @@ where
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::{Tree, Leaf, Node};
+/// use lipgloss_tree::{Tree, Leaf, Node, Children};
 ///
 /// // Create a simple leaf node
 /// let leaf = Leaf::new("Hello", false);
@@ -287,7 +287,7 @@ impl Children for Slice {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::{NodeChildren, Children, Leaf};
+/// use lipgloss_tree::{NodeChildren, Children, Leaf, Node};
 ///
 /// let mut children = NodeChildren::new();
 /// children.append(Box::new(Leaf::new("Item 1", false)));
@@ -326,7 +326,7 @@ pub trait Children {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::{NodeChildren, Leaf};
+/// use lipgloss_tree::{NodeChildren, Leaf, Children};
 ///
 /// let mut children = NodeChildren::new();
 /// children.append(Box::new(Leaf::new("First", false)));
@@ -345,7 +345,7 @@ impl NodeChildren {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::NodeChildren;
+    /// use lipgloss_tree::{NodeChildren, Children};
     ///
     /// let children = NodeChildren::new();
     /// assert_eq!(children.length(), 0);
@@ -363,7 +363,7 @@ impl NodeChildren {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{NodeChildren, Leaf};
+    /// use lipgloss_tree::{NodeChildren, Leaf, Children};
     ///
     /// let nodes = vec![
     ///     Box::new(Leaf::new("A", false)) as Box<dyn lipgloss_tree::Node>,
@@ -385,7 +385,7 @@ impl NodeChildren {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{NodeChildren, Leaf};
+    /// use lipgloss_tree::{NodeChildren, Leaf, Children};
     ///
     /// let mut children = NodeChildren::new();
     /// children.append(Box::new(Leaf::new("New Item", false)));
@@ -408,7 +408,7 @@ impl NodeChildren {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{NodeChildren, Leaf};
+    /// use lipgloss_tree::{NodeChildren, Leaf, Children};
     ///
     /// let mut children = NodeChildren::new();
     /// children.append(Box::new(Leaf::new("Remove me", false)));
@@ -440,7 +440,7 @@ impl NodeChildren {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{NodeChildren, Leaf};
+    /// use lipgloss_tree::{NodeChildren, Leaf, Node};
     ///
     /// let mut children = NodeChildren::new();
     /// children.append(Box::new(Leaf::new("Original", false)));
@@ -483,7 +483,7 @@ impl Children for NodeChildren {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::{Leaf, Node};
+/// use lipgloss_tree::{Leaf, Node, Children};
 ///
 /// let leaf = Leaf::new("Hello, World!", false);
 /// assert_eq!(leaf.value(), "Hello, World!");
@@ -511,7 +511,7 @@ impl Leaf {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Leaf;
+    /// use lipgloss_tree::{Leaf, Node};
     ///
     /// let visible_leaf = Leaf::new("Visible", false);
     /// let hidden_leaf = Leaf::new("Hidden", true);
@@ -641,7 +641,7 @@ impl Tree {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Tree;
+    /// use lipgloss_tree::{Tree, Node, Children};
     ///
     /// let tree = Tree::new();
     /// assert!(tree.value().is_empty());
@@ -678,7 +678,7 @@ impl Tree {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Tree;
+    /// use lipgloss_tree::{Tree, Node};
     ///
     /// let tree = Tree::new().root("My Root");
     /// assert_eq!(tree.value(), "My Root");
@@ -700,7 +700,7 @@ impl Tree {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Tree;
+    /// use lipgloss_tree::{Tree, Node};
     ///
     /// let hidden_tree = Tree::new().root("Hidden").hide(true);
     /// assert!(hidden_tree.hidden());
@@ -764,7 +764,7 @@ impl Tree {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Tree;
+    /// use lipgloss_tree::{Tree, Node, Children};
     ///
     /// let tree = Tree::new()
     ///     .root("Parent")
@@ -795,7 +795,7 @@ impl Tree {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{Tree, Leaf};
+    /// use lipgloss_tree::{Tree, Leaf, Node, Children};
     ///
     /// let tree = Tree::new()
     ///     .root("Parent")
@@ -882,7 +882,7 @@ impl Tree {
     ///
     /// let tree = Tree::new()
     ///     .root("Styled Root")
-    ///     .root_style(Style::new().bold(true).foreground("blue".into()));
+    ///     .root_style(Style::new().bold(true).foreground("blue"));
     /// ```
     pub fn root_style(mut self, style: Style) -> Self {
         self.root_style = Some(style);
@@ -905,7 +905,7 @@ impl Tree {
     ///
     /// let tree = Tree::new()
     ///     .child(vec!["Item 1".into(), "Item 2".into()])
-    ///     .item_style(Style::new().foreground("green".into()));
+    ///     .item_style(Style::new().foreground("green"));
     /// ```
     pub fn item_style(mut self, style: Style) -> Self {
         self.item_style = Some(style);
@@ -928,7 +928,7 @@ impl Tree {
     ///
     /// let tree = Tree::new()
     ///     .child(vec!["Item 1".into(), "Item 2".into()])
-    ///     .enumerator_style(Style::new().foreground("yellow".into()));
+    ///     .enumerator_style(Style::new().foreground("yellow"));
     /// ```
     pub fn enumerator_style(mut self, style: Style) -> Self {
         self.enumerator_style = Some(style);
@@ -954,9 +954,9 @@ impl Tree {
     ///     .child(vec!["First".into(), "Second".into(), "Third".into()])
     ///     .item_style_func(|_children, i| {
     ///         if i % 2 == 0 {
-    ///             Style::new().foreground("red".into())
+    ///             Style::new().foreground("red")
     ///         } else {
-    ///             Style::new().foreground("blue".into())
+    ///             Style::new().foreground("blue")
     ///         }
     ///     });
     /// ```
@@ -977,16 +977,16 @@ impl Tree {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Tree;
+    /// use lipgloss_tree::{Tree, Children};
     /// use lipgloss::Style;
     ///
     /// let tree = Tree::new()
     ///     .child(vec!["Item 1".into(), "Item 2".into()])
     ///     .enumerator_style_func(|children, i| {
     ///         if i == children.length() - 1 {
-    ///             Style::new().foreground("red".into())   // Last item in red
+    ///             Style::new().foreground("red")   // Last item in red
     ///         } else {
-    ///             Style::new().foreground("green".into()) // Others in green
+    ///             Style::new().foreground("green") // Others in green
     ///         }
     ///     });
     /// ```
@@ -1167,7 +1167,7 @@ impl From<Leaf> for Box<dyn Node> {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::root;
+/// use lipgloss_tree::{root, Node, Children};
 ///
 /// let tree = root("My Project")
 ///     .child(vec!["file1.txt".into(), "file2.txt".into()]);
@@ -1195,7 +1195,7 @@ pub fn root(root: impl Into<String>) -> Tree {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::new_string_data;
+/// use lipgloss_tree::{new_string_data, Children, Node};
 ///
 /// let children = new_string_data(&["Item 1", "Item 2", "Item 3"]);
 /// assert_eq!(children.length(), 3);
@@ -1218,7 +1218,7 @@ pub fn new_string_data(data: &[&str]) -> NodeChildren {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::{Filter, new_string_data};
+/// use lipgloss_tree::{Filter, new_string_data, Children};
 ///
 /// let data = new_string_data(&["A", "B", "C", "D"]);
 /// let filtered = Filter::new(Box::new(data))
@@ -1246,7 +1246,7 @@ impl Filter {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{Filter, new_string_data};
+    /// use lipgloss_tree::{Filter, new_string_data, Children};
     ///
     /// let data = new_string_data(&["Item 1", "Item 2"]);
     /// let filter = Filter::new(Box::new(data));
@@ -1269,7 +1269,7 @@ impl Filter {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{Filter, new_string_data};
+    /// use lipgloss_tree::{Filter, new_string_data, Children, Node};
     ///
     /// let data = new_string_data(&["A", "B", "C", "D", "E"]);
     /// let filtered = Filter::new(Box::new(data))

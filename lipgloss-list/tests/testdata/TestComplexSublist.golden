@@ -1,0 +1,37 @@
+• Foo
+• Bar
+  • foo2
+  • bar2
+• Qux
+   I. aaa
+  II. bbb
+• Deep
+  A. foo
+  B. Deeper
+    1. a
+    2. b
+    3. Even Deeper, inherit parent renderer
+      * sus
+      * d minor
+      * f#
+      * One ore level, with another renderer
+        - a
+          multine
+          string
+        - hoccus poccus
+        - abra kadabra
+        - And finally, a tree within all this
+          [38;2;255;135;215m├──[0m another
+          [38;2;255;135;215m│[0m   multine
+          [38;2;255;135;215m│[0m   string
+          [38;2;255;135;215m├──[0m something
+          [38;2;255;135;215m├──[0m a subtree
+          [38;2;255;135;215m│[0m   [38;2;255;135;215m├──[0m yup
+          [38;2;255;135;215m│[0m   [38;2;255;135;215m├──[0m many itens
+          [38;2;255;135;215m│[0m   [38;2;255;135;215m└──[0m another
+          [38;2;255;135;215m├──[0m hallo
+          [38;2;255;135;215m└──[0m wunderbar!
+        - this is a tree
+          and other obvious statements
+  C. bar
+• Baz

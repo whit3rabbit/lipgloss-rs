@@ -24,11 +24,12 @@
 //! let tree = Tree::new()
 //!     .root("My Project")
 //!     .child(vec![
-//!         "src/",
-//!         "README.md",
+//!         "src/".into(),
+//!         "README.md".into(),
 //!         Tree::new()
 //!             .root("docs/")
-//!             .child(vec!["guide.md", "api.md"]),
+//!             .child(vec!["guide.md".into(), "api.md".into()])
+//!             .into(),
 //!     ]);
 //!
 //! println!("{}", tree);
@@ -51,7 +52,8 @@
 //!
 //! ```rust
 //! use lipgloss::{Style, Color};
-//! use lipgloss_tree::{Tree, Renderer, TreeStyle};
+//! use lipgloss_tree::{Tree, Renderer};
+//! use lipgloss_tree::renderer::TreeStyle;
 //!
 //! let custom_style = TreeStyle {
 //!     enumerator_func: |_, _| Style::new().foreground(Color::from("blue")),
@@ -62,7 +64,7 @@
 //!
 //! let tree = Tree::new()
 //!     .root("Styled Tree")
-//!     .child(vec!["Item 1", "Item 2"]);
+//!     .child(vec!["Item 1".into(), "Item 2".into()]);
 //!
 //! let renderer = Renderer::new().style(custom_style);
 //! // Use renderer.render(&tree, true, "") for custom rendering
@@ -75,7 +77,7 @@
 //!
 //! let tree = Tree::new()
 //!     .root("Roman List")
-//!     .child(vec!["First", "Second", "Third"])
+//!     .child(vec!["First".into(), "Second".into(), "Third".into()])
 //!     .enumerator(|_, i| match i + 1 {
 //!         1 => "I".to_string(),
 //!         2 => "II".to_string(),  

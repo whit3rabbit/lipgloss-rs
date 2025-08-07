@@ -57,10 +57,10 @@ impl<'a> Children for VisibleChildren<'a> {
 ///
 /// ```rust
 /// use lipgloss::Style;
-/// use lipgloss_tree::TreeStyle;
+/// use lipgloss_tree::renderer::TreeStyle;
 ///
 /// let style = TreeStyle {
-///     enumerator_func: |_, _| Style::new().foreground("blue".into()),
+///     enumerator_func: |_, _| Style::new().foreground("blue"),
 ///     item_func: |_, _| Style::new().bold(true),
 ///     enumerator_base: Some(Style::new().padding_right(1)),
 ///     item_base: None,
@@ -114,7 +114,8 @@ impl Default for TreeStyle {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::{Renderer, TreeStyle};
+/// use lipgloss_tree::{Renderer, Children};
+/// use lipgloss_tree::renderer::TreeStyle;
 /// use lipgloss::Style;
 ///
 /// let renderer = Renderer::new()
@@ -169,7 +170,8 @@ impl Renderer {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::{Renderer, TreeStyle};
+    /// use lipgloss_tree::Renderer;
+    /// use lipgloss_tree::renderer::TreeStyle;
     /// use lipgloss::Style;
     ///
     /// let custom_style = TreeStyle {
@@ -196,7 +198,7 @@ impl Renderer {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Renderer;
+    /// use lipgloss_tree::{Renderer, Children};
     ///
     /// let renderer = Renderer::new()
     ///     .enumerator(|children, i| {
@@ -225,7 +227,7 @@ impl Renderer {
     /// # Examples
     ///
     /// ```rust
-    /// use lipgloss_tree::Renderer;
+    /// use lipgloss_tree::{Renderer, Children};
     ///
     /// let renderer = Renderer::new()
     ///     .indenter(|children, i| {
@@ -264,7 +266,7 @@ impl Renderer {
     ///
     /// let tree = Tree::new()
     ///     .root("My Tree")
-    ///     .child(vec!["Item 1".to_string(), "Item 2".to_string()]);
+    ///     .child(vec!["Item 1".into(), "Item 2".into()]);
     ///
     /// let renderer = Renderer::new();
     /// let output = renderer.render(&tree, true, "");
@@ -775,7 +777,7 @@ impl Default for Renderer {
 /// # Examples
 ///
 /// ```rust
-/// use lipgloss_tree::new_renderer;
+/// use lipgloss_tree::renderer::new_renderer;
 ///
 /// let renderer = new_renderer();
 /// ```
