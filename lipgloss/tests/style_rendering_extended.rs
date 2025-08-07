@@ -13,7 +13,7 @@ fn is_no_color_environment() -> bool {
 #[test]
 fn border_color_precedence_per_side_over_combined() {
     use lipgloss::color::Color;
-    
+
     if is_no_color_environment() {
         // Skip color-dependent tests in CI/no-color environments
         return;

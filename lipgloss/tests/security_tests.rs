@@ -211,14 +211,8 @@ fn test_memory_usage_bounds() {
 fn test_performance_regression_style_comparison() {
     // Test that the optimized style comparison is performant
     // Use different properties that don't depend on color parsing for CI compatibility
-    let style1 = Style::new()
-        .bold(true)
-        .width(100)
-        .padding(5, 5, 5, 5);
-    let style2 = Style::new()
-        .bold(true)
-        .width(100)
-        .padding(5, 5, 5, 5);
+    let style1 = Style::new().bold(true).width(100).padding(5, 5, 5, 5);
+    let style2 = Style::new().bold(true).width(100).padding(5, 5, 5, 5);
     let style3 = Style::new()
         .bold(true)
         .width(200) // Different width to ensure inequality

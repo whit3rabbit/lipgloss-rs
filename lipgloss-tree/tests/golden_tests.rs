@@ -141,7 +141,7 @@ fn test_tree_nil() {
 fn test_tree_custom_enumerators_and_styles() {
     // Use ANSI profile to match Go golden output
     set_color_profile(ColorProfileKind::ANSI);
-    
+
     // Mimic TestTreeCustom: customize enumerator/indenter and styles (blue arrows, red items)
     // Use bright blue (94) and bright red (91) to match golden output
     let enum_style = lipgloss::Style::new()
@@ -165,7 +165,7 @@ fn test_tree_custom_enumerators_and_styles() {
         .indenter(|_, _| "->".to_string());
 
     assert_matches_golden(&format!("{}", tr), "TestTreeCustom.golden");
-    
+
     // Reset to default state to avoid affecting other tests
     set_color_profile(ColorProfileKind::TrueColor);
 }
