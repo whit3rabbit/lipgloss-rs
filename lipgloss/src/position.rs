@@ -327,9 +327,8 @@ impl Renderer {
             } else {
                 // Somewhere in the middle per Go: split proportionally
                 let total_gap = (gap as usize) + short;
-                let split = ((total_gap as f64) * v).round() as usize;
-                let left = total_gap - split;
-                let right = total_gap - left;
+                let right = ((total_gap as f64) * (1.0 - v)).round() as usize;
+                let left = total_gap - right;
                 out.push_str(&ws.render(left));
                 out.push_str(l);
                 out.push_str(&ws.render(right));
@@ -408,9 +407,8 @@ impl Renderer {
             out.push_str(s);
         } else {
             // Middle
-            let split = ((gap as f64) * v).round() as i32;
-            let top = gap - split;
-            let bottom = gap - top;
+            let bottom = ((gap as f64) * (1.0 - v)).round() as i32;
+            let top = gap - bottom;
             for _ in 0..top {
                 out.push_str(&empty_line);
                 out.push('\n');
