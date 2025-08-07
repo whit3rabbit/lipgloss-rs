@@ -302,7 +302,7 @@ impl fmt::Display for List {
 }
 
 /// List indenter for nested content within list items.
-/// 
+///
 /// CRITICAL SPACING REQUIREMENTS:
 /// - Regular sublists MUST have 2-space indentation before bullets
 /// - Example: "• Parent\n  • Child" (2 spaces before child bullet)

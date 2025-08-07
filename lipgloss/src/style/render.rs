@@ -329,16 +329,21 @@ impl Style {
         let _has_bg = self.is_set(BACKGROUND_KEY) || self.get_attr(ATTR_COLOR_WHITESPACE);
 
         // Determine if we need to render any borders. If so, we must not early-return.
-        let has_borders =
-            (self.get_border_top() || self.get_border_right() || self.get_border_bottom() || self.get_border_left())
-                && self.is_set(BORDER_STYLE_KEY);
-        
+        let has_borders = (self.get_border_top()
+            || self.get_border_right()
+            || self.get_border_bottom()
+            || self.get_border_left())
+            && self.is_set(BORDER_STYLE_KEY);
+
         // Check if we have margins
-        let has_margins = self.is_set(MARGIN_TOP_KEY) || self.is_set(MARGIN_RIGHT_KEY) 
-                       || self.is_set(MARGIN_BOTTOM_KEY) || self.is_set(MARGIN_LEFT_KEY);
+        let has_margins = self.is_set(MARGIN_TOP_KEY)
+            || self.is_set(MARGIN_RIGHT_KEY)
+            || self.is_set(MARGIN_BOTTOM_KEY)
+            || self.is_set(MARGIN_LEFT_KEY);
 
         // If no SGR codes, no width/height constraints, no borders, and no margins, we're done.
-        if sgr.is_empty() && target_width <= 0 && target_height <= 0 && !has_borders && !has_margins {
+        if sgr.is_empty() && target_width <= 0 && target_height <= 0 && !has_borders && !has_margins
+        {
             return rendered;
         }
 
@@ -392,7 +397,7 @@ impl Style {
             // Cap padding to prevent excessive allocations
             let safe_top_pad = top_pad_count.min(1000);
             let safe_bottom_pad = bottom_pad_count.min(1000);
-            
+
             for _ in 0..safe_top_pad {
                 height_adjusted.push(empty_line.clone());
             }
@@ -795,9 +800,7 @@ impl Style {
         // Apply left and right margins to each line
         let lines: Vec<String> = block
             .split('\n')
-            .map(|line| {
-                format!("{}{}{}", left_margin_str, line, right_margin_str)
-            })
+            .map(|line| format!("{}{}{}", left_margin_str, line, right_margin_str))
             .collect();
 
         let mut result = Vec::new();

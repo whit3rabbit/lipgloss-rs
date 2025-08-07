@@ -1,8 +1,8 @@
 use lipgloss::{Color, Style};
-use lipgloss_list::{dash, List};
-use lipgloss_tree::Children;
-use lipgloss_table::{Table, HEADER_ROW};
 use lipgloss::{CENTER, RIGHT};
+use lipgloss_list::{dash, List};
+use lipgloss_table::{Table, HEADER_ROW};
+use lipgloss_tree::Children;
 
 fn checklist_enumerator(_items: &dyn Children, index: usize) -> String {
     match index {

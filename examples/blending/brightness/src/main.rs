@@ -1,7 +1,7 @@
 // This example demonstrates how to use the lighten and darken functions
 // to create progressive brightness variations in a standalone lipgloss-rs application.
 
-use lipgloss::{lighten, darken, Color, Style};
+use lipgloss::{darken, lighten, Color, Style};
 use std::collections::HashMap;
 
 fn main() {
@@ -18,8 +18,7 @@ fn main() {
     // Number of steps to generate
     let steps = 20;
 
-    let color_name_style = Style::new()
-        .bold(true);
+    let color_name_style = Style::new().bold(true);
 
     println!("🌈 Color Brightness Utilities Demo\n");
 
@@ -36,7 +35,7 @@ fn main() {
         }
         println!();
 
-        // Create darkened variations  
+        // Create darkened variations
         print!("Darkened:  ");
         for i in 0..steps {
             let darkened_color = darken(base_color, percentage * (i as f64 + 1.0));

@@ -1,7 +1,7 @@
 // This example demonstrates how to use the blend_1d function to create
 // beautiful color gradients in a standalone lipgloss-rs application.
 
-use lipgloss::{blend_1d, Color, Style, rounded_border, CENTER};
+use lipgloss::{blend_1d, rounded_border, Color, Style, CENTER};
 
 fn main() {
     // Define gradient presets matching the Go implementation
@@ -54,11 +54,12 @@ fn main() {
         .margin_bottom(1)
         .align_horizontal(CENTER);
 
-    let gradient_style = Style::new()
-        .border(rounded_border())
-        .margin_bottom(1);
+    let gradient_style = Style::new().border(rounded_border()).margin_bottom(1);
 
-    println!("{}", title_style.render("Color Gradient Examples with Blend1D"));
+    println!(
+        "{}",
+        title_style.render("Color Gradient Examples with Blend1D")
+    );
     println!();
 
     for (name, colors) in gradients {

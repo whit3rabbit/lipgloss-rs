@@ -30,7 +30,7 @@
 
 use crate::renderer::{default_renderer, ColorProfileKind, Renderer};
 use palette::color_difference::EuclideanDistance;
-use palette::{FromColor, Lab, Srgb, Hsv, Clamp};
+use palette::{Clamp, FromColor, Hsv, Lab, Srgb};
 
 /// A color intended to be rendered in the terminal.
 ///
@@ -940,7 +940,7 @@ mod tests {
         let white = Color("#ffffff".to_string());
         let dark_gray = Color("#404040".to_string());
         let light_gray = Color("#c0c0c0".to_string());
-        
+
         assert!(is_dark_color(&black));
         assert!(!is_dark_color(&white));
         assert!(is_dark_color(&dark_gray));
@@ -950,12 +950,12 @@ mod tests {
     #[test]
     fn test_lighten_darken() {
         let red = Color("#800000".to_string()); // Dark red
-        
+
         // Test lighten
         let lighter = lighten(&red, 0.5);
         let (lr, lg, lb, _) = lighter.rgba();
         let (or, og, ob, _) = red.rgba();
-        
+
         // Should be lighter than original
         assert!(lr >= or);
         assert!(lg >= og);
@@ -966,8 +966,8 @@ mod tests {
         let darker = darken(&bright_red, 0.3);
         let (dr, dg, db, _) = darker.rgba();
         let (br, bg, bb, _) = bright_red.rgba();
-        
-        // Should be darker than original  
+
+        // Should be darker than original
         assert!(dr <= br);
         assert!(dg <= bg);
         assert!(db <= bb);
@@ -977,10 +977,11 @@ mod tests {
     fn test_alpha_adjustment() {
         let red = Color("#ff0000".to_string());
         let semi_transparent = alpha(&red, 0.5);
-        
+
         // Should have alpha component in hex string
         assert!(semi_transparent.0.len() == 9); // #rrggbbaa format
-        assert!(semi_transparent.0.contains("7f") || semi_transparent.0.contains("80")); // ~127-128 in hex
+        assert!(semi_transparent.0.contains("7f") || semi_transparent.0.contains("80"));
+        // ~127-128 in hex
     }
 
     #[test]
@@ -988,7 +989,7 @@ mod tests {
         let red = Color("#ff0000".to_string());
         let comp = complementary(&red);
         let (cr, cg, cb, _) = comp.rgba();
-        
+
         // Complementary of red should be cyan-ish (high green and blue)
         assert!(cg > 100 || cb > 100);
         assert!(cr < cg || cr < cb); // Red should be lower than green or blue
@@ -998,14 +999,14 @@ mod tests {
     fn test_light_dark_function() {
         let red = Color("#ff0000".to_string());
         let blue = Color("#0000ff".to_string());
-        
+
         // Test dark background
         let dark_fn = light_dark(true);
         let dark_choice = dark_fn(&red, &blue);
         let (dr, dg, db, _) = dark_choice.rgba();
         let (br, bg, bb, _) = blue.rgba();
         assert_eq!((dr, dg, db), (br, bg, bb)); // Should choose blue for dark
-        
+
         // Test light background
         let light_fn = light_dark(false);
         let light_choice = light_fn(&red, &blue);
@@ -1017,18 +1018,18 @@ mod tests {
     #[test]
     fn test_complete_function() {
         use crate::renderer::ColorProfileKind;
-        
+
         let ansi = Color("1".to_string());
         let ansi256 = Color("124".to_string());
         let truecolor = Color("#ff34ac".to_string());
-        
+
         // Test TrueColor profile
         let complete_fn = complete(ColorProfileKind::TrueColor);
         let chosen = complete_fn(&ansi, &ansi256, &truecolor);
         let (cr, cg, cb, _) = chosen.rgba();
         let (tr, tg, tb, _) = truecolor.rgba();
         assert_eq!((cr, cg, cb), (tr, tg, tb));
-        
+
         // Test ANSI profile
         let complete_fn = complete(ColorProfileKind::ANSI);
         let chosen = complete_fn(&ansi, &ansi256, &truecolor);
@@ -1557,13 +1558,13 @@ fn srgb_to_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
 /// Convert 8-bit RGBA to true 16-bit RGBA for Go blending compatibility
 fn srgb_to_true_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
     // Expand 8-bit channels to 16-bit like Go's color.RGBA
-    // Go's color.RGBA interface returns 16-bit values where each 8-bit value 
+    // Go's color.RGBA interface returns 16-bit values where each 8-bit value
     // is expanded by multiplying by 257 (0x101) to fill the full 16-bit range
     // So 255 (0xFF) becomes 65535 (0xFFFF)
     let (r, g, b) = (
         rgb.red as u32 * 257,
-        rgb.green as u32 * 257, 
-        rgb.blue as u32 * 257
+        rgb.green as u32 * 257,
+        rgb.blue as u32 * 257,
     );
     let a = a_u8 as u32 * 257;
     (r, g, b, a)
@@ -1600,12 +1601,12 @@ pub fn alpha<C: TerminalColor>(color: &C, alpha_val: f64) -> Color {
     let (r, g, b, _) = color.rgba();
     let clamped_alpha = clamp(alpha_val, 0.0, 1.0);
     let alpha_u8 = (clamped_alpha * 255.0) as u8;
-    
+
     // rgba() now returns 8-bit values directly
     let r_u8 = r as u8;
     let g_u8 = g as u8;
     let b_u8 = b as u8;
-    
+
     Color(format!(
         "#{:02x}{:02x}{:02x}{:02x}",
         r_u8, g_u8, b_u8, alpha_u8
@@ -1628,12 +1629,12 @@ pub fn alpha<C: TerminalColor>(color: &C, alpha_val: f64) -> Color {
 pub fn lighten<C: TerminalColor>(color: &C, percent: f64) -> Color {
     let (r, g, b, _a) = color.rgba();
     let add = 255.0 * clamp(percent, 0.0, 1.0);
-    
+
     // rgba() now returns 8-bit values directly
     let r_u8 = r as u8;
-    let g_u8 = g as u8;  
+    let g_u8 = g as u8;
     let b_u8 = b as u8;
-    
+
     Color(format!(
         "#{:02x}{:02x}{:02x}",
         ((r_u8 as f64 + add).min(255.0)) as u8,
@@ -1658,12 +1659,12 @@ pub fn lighten<C: TerminalColor>(color: &C, percent: f64) -> Color {
 pub fn darken<C: TerminalColor>(color: &C, percent: f64) -> Color {
     let (r, g, b, _a) = color.rgba();
     let mult = 1.0 - clamp(percent, 0.0, 1.0);
-    
+
     // rgba() now returns 8-bit values directly
     let r_u8 = r as u8;
     let g_u8 = g as u8;
     let b_u8 = b as u8;
-    
+
     Color(format!(
         "#{:02x}{:02x}{:02x}",
         (r_u8 as f64 * mult) as u8,
@@ -1687,27 +1688,31 @@ pub fn darken<C: TerminalColor>(color: &C, percent: f64) -> Color {
 /// ```
 pub fn complementary<C: TerminalColor>(color: &C) -> Color {
     let (r, g, b, _a) = color.rgba();
-    
+
     // rgba() now returns 8-bit values directly
     let r_u8 = r as u8;
     let g_u8 = g as u8;
     let b_u8 = b as u8;
-    
+
     // Convert to HSV to rotate hue by 180°
-    let srgb = Srgb::new(r_u8 as f32 / 255.0, g_u8 as f32 / 255.0, b_u8 as f32 / 255.0);
+    let srgb = Srgb::new(
+        r_u8 as f32 / 255.0,
+        g_u8 as f32 / 255.0,
+        b_u8 as f32 / 255.0,
+    );
     let hsv: Hsv = Hsv::from_color(srgb);
-    
+
     let mut new_hue = hsv.hue.into_positive_degrees() + 180.0;
     if new_hue >= 360.0 {
         new_hue -= 360.0;
     } else if new_hue < 0.0 {
         new_hue += 360.0;
     }
-    
+
     let complementary_hsv = Hsv::new(new_hue, hsv.saturation, hsv.value);
     let complementary_srgb: Srgb = Srgb::from_color(complementary_hsv);
     let clamped = complementary_srgb.clamp();
-    
+
     Color(format!(
         "#{:02x}{:02x}{:02x}",
         (clamped.red * 255.0) as u8,
@@ -1732,7 +1737,7 @@ pub fn complementary<C: TerminalColor>(color: &C) -> Color {
 /// ```
 pub fn is_dark_color<C: TerminalColor>(color: &C) -> bool {
     let (r, g, b, _a) = color.rgba();
-    
+
     // Calculate relative luminance (simplified)
     let luminance = 0.299 * (r as f64) + 0.587 * (g as f64) + 0.114 * (b as f64);
     luminance < 127.5 // Midpoint of 0-255
@@ -1762,7 +1767,7 @@ pub fn light_dark(is_dark: bool) -> LightDarkFunc {
             let (r, g, b, _a) = dark.rgba();
             Color(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
         } else {
-            // Convert light color to our Color type  
+            // Convert light color to our Color type
             let (r, g, b, _a) = light.rgba();
             Color(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
         }
@@ -1770,7 +1775,8 @@ pub fn light_dark(is_dark: bool) -> LightDarkFunc {
 }
 
 /// A function that returns the appropriate color based on the color profile.
-pub type CompleteFunc = Box<dyn Fn(&dyn TerminalColor, &dyn TerminalColor, &dyn TerminalColor) -> Color>;
+pub type CompleteFunc =
+    Box<dyn Fn(&dyn TerminalColor, &dyn TerminalColor, &dyn TerminalColor) -> Color>;
 
 /// Returns a function that will return the appropriate color based on the given color profile.
 ///
@@ -1784,22 +1790,26 @@ pub type CompleteFunc = Box<dyn Fn(&dyn TerminalColor, &dyn TerminalColor, &dyn 
 ///
 /// let complete_fn = complete(ColorProfileKind::TrueColor);
 /// let ansi = Color("1".to_string());
-/// let ansi256 = Color("124".to_string()); 
+/// let ansi256 = Color("124".to_string());
 /// let truecolor = Color("#ff34ac".to_string());
 /// let chosen = complete_fn(&ansi, &ansi256, &truecolor); // Will choose truecolor
 /// ```
 pub fn complete(profile: ColorProfileKind) -> CompleteFunc {
-    Box::new(move |ansi: &dyn TerminalColor, ansi256: &dyn TerminalColor, truecolor: &dyn TerminalColor| {
-        let chosen_color = match profile {
-            ColorProfileKind::ANSI => ansi,
-            ColorProfileKind::ANSI256 => ansi256,
-            ColorProfileKind::TrueColor => truecolor,
-            ColorProfileKind::NoColor => return Color("".to_string()),
-        };
-        
-        let (r, g, b, _a) = chosen_color.rgba();
-        Color(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
-    })
+    Box::new(
+        move |ansi: &dyn TerminalColor,
+              ansi256: &dyn TerminalColor,
+              truecolor: &dyn TerminalColor| {
+            let chosen_color = match profile {
+                ColorProfileKind::ANSI => ansi,
+                ColorProfileKind::ANSI256 => ansi256,
+                ColorProfileKind::TrueColor => truecolor,
+                ColorProfileKind::NoColor => return Color("".to_string()),
+            };
+
+            let (r, g, b, _a) = chosen_color.rgba();
+            Color(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
+        },
+    )
 }
 
 /// Optimized hex color parsing with better performance than alternatives.
@@ -1824,9 +1834,9 @@ pub fn parse_hex(s: &str) -> Option<(u8, u8, u8, u8)> {
     if s.is_empty() || !s.starts_with('#') {
         return None;
     }
-    
+
     let hex = &s[1..];
-    
+
     match hex.len() {
         3 => {
             // #RGB

@@ -2,8 +2,7 @@
 
 use lipgloss::security::safe_str_repeat;
 use lipgloss::{
-    blend_1d, join_horizontal, join_vertical, normal_border, place,
-    rounded_border,
+    blend_1d, join_horizontal, join_vertical, normal_border, place, rounded_border,
     whitespace::{with_whitespace_chars, with_whitespace_foreground},
     width, AdaptiveColor, Color, Style, BOTTOM, CENTER, LEFT, RIGHT, TOP,
 };
@@ -14,15 +13,28 @@ const WIDTH: i32 = 96;
 const COLUMN_WIDTH: i32 = 30;
 
 // Color grid blends colors from 4 corner quadrants, into a box region using native blending
-fn color_grid(x_steps: usize, y_steps: usize, corners: (&str, &str, &str, &str)) -> Vec<Vec<Color>> {
+fn color_grid(
+    x_steps: usize,
+    y_steps: usize,
+    corners: (&str, &str, &str, &str),
+) -> Vec<Vec<Color>> {
     let (top_left, top_right, bottom_left, bottom_right) = corners;
-    
-    let left_colors = blend_1d(y_steps, vec![Color::from(top_left), Color::from(bottom_left)]);
-    let right_colors = blend_1d(y_steps, vec![Color::from(top_right), Color::from(bottom_right)]);
+
+    let left_colors = blend_1d(
+        y_steps,
+        vec![Color::from(top_left), Color::from(bottom_left)],
+    );
+    let right_colors = blend_1d(
+        y_steps,
+        vec![Color::from(top_right), Color::from(bottom_right)],
+    );
 
     let mut grid = Vec::with_capacity(y_steps);
     for y in 0..y_steps {
-        let row_colors = blend_1d(x_steps, vec![left_colors[y].clone(), right_colors[y].clone()]);
+        let row_colors = blend_1d(
+            x_steps,
+            vec![left_colors[y].clone(), right_colors[y].clone()],
+        );
         grid.push(row_colors);
     }
 
@@ -80,9 +92,7 @@ fn main() {
 
     // Active tab: keep bottom border enabled but draw it as spaces (Go parity)
     // This preserves equal height across tabs while visually hiding the bottom edge.
-    let active_tab = tab
-        .clone()
-        .border_style(active_tab_border);
+    let active_tab = tab.clone().border_style(active_tab_border);
 
     // Title
     let title_style = Style::new()
@@ -232,8 +242,7 @@ fn main() {
     {
         // Stepped title using the same bilinear color grid as the Go demo
         // Text remains off-white per title_style (to match Go)
-        let colors =
-            color_grid(1, 5, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
+        let colors = color_grid(1, 5, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
         let mut title_parts = Vec::new();
 
         for (i, v) in colors.iter().enumerate() {
@@ -318,8 +327,7 @@ fn main() {
 
     // Color grid
     let colors = {
-        let colors =
-            color_grid(14, 8, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
+        let colors = color_grid(14, 8, ("#F25D94", "#EDFF82", "#643AFF", "#14F9D5"));
         let mut b = String::new();
         for (i, x) in colors.iter().enumerate() {
             for y in x {

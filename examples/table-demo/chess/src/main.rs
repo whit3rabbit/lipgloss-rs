@@ -24,8 +24,7 @@ fn main() {
         .rows(board)
         .style_func_boxed(style_func);
 
-    let ranks = label_style
-        .render(&[" A", "B", "C", "D", "E", "F", "G", "H  "].join("   "));
+    let ranks = label_style.render(&[" A", "B", "C", "D", "E", "F", "G", "H  "].join("   "));
     let files = label_style.render(&[" 1", "2", "3", "4", "5", "6", "7", "8 "].join("\n\n "));
 
     let table_render = t.render();

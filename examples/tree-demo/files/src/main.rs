@@ -24,9 +24,7 @@ fn build_nodes(path: &Path) -> io::Result<Vec<Box<dyn Node>>> {
         if entry.file_type()?.is_dir() {
             // Directory: create a subtree and recurse
             let children = build_nodes(&entry_path)?;
-            let subtree = Tree::new()
-                .root(name.to_string())
-                .child(children);
+            let subtree = Tree::new().root(name.to_string()).child(children);
             nodes.push(Box::new(subtree) as Box<dyn Node>);
         } else {
             // File: add a leaf
@@ -38,9 +36,7 @@ fn build_nodes(path: &Path) -> io::Result<Vec<Box<dyn Node>>> {
 }
 
 fn main() -> io::Result<()> {
-    let enumerator_style = Style::new()
-        .foreground(Color::from("240"))
-        .padding_right(1);
+    let enumerator_style = Style::new().foreground(Color::from("240")).padding_right(1);
     let item_style = Style::new()
         .foreground(Color::from("99"))
         .bold(true)

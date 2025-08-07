@@ -1,9 +1,9 @@
 //! Comprehensive Go parity tests for blending and color utilities.
-//! 
+//!
 //! This module contains tests ported directly from the Go implementation
 //! to ensure exact compatibility and color accuracy.
 
-use lipgloss::color::{Color, TerminalColor, alpha, lighten, darken, complementary, parse_hex};
+use lipgloss::color::{alpha, complementary, darken, lighten, parse_hex, Color, TerminalColor};
 use lipgloss::{blend_1d, blend_2d};
 
 // Test helper functions (equivalent to Go test helpers)
@@ -29,7 +29,7 @@ fn expect_color_matches(got: &Color, want: &Color) {
     // Convert from 16-bit to 8-bit values for comparison
     let gru = (gr >> 8) as u8;
     let ggu = (gg >> 8) as u8;
-    let gbu = (gb >> 8) as u8; 
+    let gbu = (gb >> 8) as u8;
     let gau = (ga >> 8) as u8;
 
     let wru = (wr >> 8) as u8;
@@ -37,9 +37,19 @@ fn expect_color_matches(got: &Color, want: &Color) {
     let wbu = (wb >> 8) as u8;
     let wau = (wa >> 8) as u8;
 
-    assert_eq!((gru, ggu, gbu, gau), (wru, wgu, wbu, wau),
-        "Color mismatch: got rgba({},{},{},{}) want rgba({},{},{},{})", 
-        gru, ggu, gbu, gau, wru, wgu, wbu, wau);
+    assert_eq!(
+        (gru, ggu, gbu, gau),
+        (wru, wgu, wbu, wau),
+        "Color mismatch: got rgba({},{},{},{}) want rgba({},{},{},{})",
+        gru,
+        ggu,
+        gbu,
+        gau,
+        wru,
+        wgu,
+        wbu,
+        wau
+    );
 }
 
 /// Helper for debug output (equivalent to Go's rgbaString)
@@ -56,10 +66,7 @@ mod blend_1d_tests {
 
     #[test]
     fn test_2_colors_10_steps() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
         let expected = vec![
             rgba_color(255, 0, 0, 255),
             rgba_color(246, 0, 45, 255),
@@ -105,10 +112,7 @@ mod blend_1d_tests {
 
     #[test]
     fn test_black_to_white_5_steps() {
-        let stops = vec![
-            rgba_color(0, 0, 0, 255),
-            rgba_color(255, 255, 255, 255),
-        ];
+        let stops = vec![rgba_color(0, 0, 0, 255), rgba_color(255, 255, 255, 255)];
         let expected = vec![
             rgba_color(0, 0, 0, 255),
             rgba_color(59, 59, 59, 255),
@@ -159,10 +163,7 @@ mod blend_1d_tests {
             rgba_color(255, 255, 0, 255),
             rgba_color(0, 0, 0, 255),
         ];
-        let expected = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 255, 0, 255),
-        ];
+        let expected = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 255, 0, 255)];
 
         let got = blend_1d(2, stops);
         assert_eq!(got.len(), expected.len());
@@ -191,14 +192,8 @@ mod blend_1d_tests {
 
     #[test]
     fn test_insufficient_steps() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
-        let expected = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
+        let expected = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
 
         let got = blend_1d(1, stops); // Should be clamped to 2
         assert_eq!(got.len(), expected.len());
@@ -223,45 +218,37 @@ mod blend_2d_tests {
 
     #[test]
     fn test_2x2_red_to_blue_0deg() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
         let got = blend_2d(2, 2, 0.0, stops);
         assert_eq!(got.len(), 4);
 
         // Verify all colors are valid (non-empty)
         for (i, color) in got.iter().enumerate() {
-            assert!(!color.0.is_empty(), "Color at index {} should not be empty", i);
+            assert!(
+                !color.0.is_empty(),
+                "Color at index {} should not be empty",
+                i
+            );
         }
     }
 
     #[test]
     fn test_3x2_red_to_blue_90deg() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
         let got = blend_2d(3, 2, 90.0, stops);
         assert_eq!(got.len(), 6);
     }
 
     #[test]
     fn test_2x3_red_to_blue_180deg() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
         let got = blend_2d(2, 3, 180.0, stops);
         assert_eq!(got.len(), 6);
     }
 
     #[test]
     fn test_2x2_red_to_blue_270deg() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
         let got = blend_2d(2, 2, 270.0, stops);
         assert_eq!(got.len(), 4);
     }
@@ -294,20 +281,14 @@ mod blend_2d_tests {
 
     #[test]
     fn test_angle_normalization_450() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
         let got = blend_2d(2, 2, 450.0, stops); // Should normalize to 90°
         assert_eq!(got.len(), 4);
     }
 
     #[test]
     fn test_negative_angle_normalization() {
-        let stops = vec![
-            rgba_color(255, 0, 0, 255),
-            rgba_color(0, 0, 255, 255),
-        ];
+        let stops = vec![rgba_color(255, 0, 0, 255), rgba_color(0, 0, 255, 255)];
         let got = blend_2d(2, 2, -90.0, stops); // Should normalize to 270°
         assert_eq!(got.len(), 4);
     }
@@ -348,9 +329,13 @@ mod color_utility_tests {
 
         for (input, expected) in test_cases {
             let color = Color::from(input);
-            let (r, g, b, _a) = color.rgba();  // Use regular rgba() for backward compatibility test
-            let actual = (r << 16) + (g << 8) + b;  // No bit shifting since rgba() returns 8-bit now
-            assert_eq!(actual as u32, expected, "Input '{}': expected 0x{:06X}, got 0x{:06X}", input, expected, actual);
+            let (r, g, b, _a) = color.rgba(); // Use regular rgba() for backward compatibility test
+            let actual = (r << 16) + (g << 8) + b; // No bit shifting since rgba() returns 8-bit now
+            assert_eq!(
+                actual as u32, expected,
+                "Input '{}': expected 0x{:06X}, got 0x{:06X}",
+                input, expected, actual
+            );
         }
     }
 
@@ -381,10 +366,26 @@ mod color_utility_tests {
             (rgba_color(255, 0, 0, 255), 1.0, rgba_color(255, 0, 0, 255)),
             (rgba_color(0, 255, 0, 255), 0.5, rgba_color(0, 255, 0, 127)),
             (rgba_color(0, 0, 255, 255), 0.25, rgba_color(0, 0, 255, 63)),
-            (rgba_color(255, 255, 255, 255), 0.0, rgba_color(255, 255, 255, 0)),
-            (rgba_color(255, 0, 255, 255), 1.5, rgba_color(255, 0, 255, 255)), // Clamped
-            (rgba_color(255, 255, 0, 255), -0.5, rgba_color(255, 255, 0, 0)), // Clamped
-            (rgba_color(18, 52, 86, 255), 0.75, rgba_color(18, 52, 86, 191)),
+            (
+                rgba_color(255, 255, 255, 255),
+                0.0,
+                rgba_color(255, 255, 255, 0),
+            ),
+            (
+                rgba_color(255, 0, 255, 255),
+                1.5,
+                rgba_color(255, 0, 255, 255),
+            ), // Clamped
+            (
+                rgba_color(255, 255, 0, 255),
+                -0.5,
+                rgba_color(255, 255, 0, 0),
+            ), // Clamped
+            (
+                rgba_color(18, 52, 86, 255),
+                0.75,
+                rgba_color(18, 52, 86, 191),
+            ),
         ];
 
         for (color, alpha_val, expected) in test_cases {
@@ -397,7 +398,7 @@ mod color_utility_tests {
     fn test_complementary_function() {
         let test_cases = [
             (hex("#FF0000"), hex("#00FFFF")), // Red -> Cyan
-            (hex("#00FF00"), hex("#FF00FF")), // Green -> Magenta  
+            (hex("#00FF00"), hex("#FF00FF")), // Green -> Magenta
             (hex("#0000FF"), hex("#FFFF00")), // Blue -> Yellow
             (hex("#FFFF00"), hex("#0000FF")), // Yellow -> Blue
             (hex("#00FFFF"), hex("#FF0000")), // Cyan -> Red

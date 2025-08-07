@@ -36,20 +36,29 @@ impl std::fmt::Display for File {
 }
 
 fn default_styles() -> (Styles, Style, Style) {
-    let base = Style::new()
+    // Base style with only foreground color for tree components to inherit.
+    // Background color is applied only by the outer block to prevent ANSI reset conflicts.
+    let base = Style::new().foreground(Color::from("225"));
+
+    // The block style for the outer box with explicit background and color_whitespace.
+    // This ensures ALL whitespace within the block width gets painted with the background.
+    let block = Style::new()
         .background(Color::from("57"))
-        .foreground(Color::from("225"));
-    let block = base
-        .clone()
         .padding(1, 3, 1, 3)
         .margin(1, 3, 1, 3)
-        .width(40);
+        .width(40)
+        .color_whitespace(true);
+
+    // The style for tree branches, inheriting the base background.
     let enumerator = base.clone().foreground(Color::from("212")).padding_right(1);
+
+    // Styles for tree content (directories, toggles, files), all inheriting the base background.
     let styles = Styles {
-        dir: base.clone(),
+        dir: base.clone().inline(true),
         toggle: base.clone().foreground(Color::from("207")).padding_right(1),
-        file: base,
+        file: base.clone(),
     };
+
     (styles, block, enumerator)
 }
 
@@ -167,5 +176,9 @@ fn main() {
                 false,
             )) as Box<dyn Node>,
         ]);
-    println!("{}", block.render(&t.to_string()));
+    // Render the tree and apply block styling with background
+    // Remove reset codes from tree content to prevent background interference
+    let tree_content = t.to_string();
+    let cleaned_content = tree_content.replace("\x1b[0m", "");
+    println!("{}", block.render(&cleaned_content));
 }

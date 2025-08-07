@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use lipgloss::{normal_border, style::Style, Color};
 use lipgloss_table::{Table, HEADER_ROW};
+use std::collections::HashMap;
 
 fn main() {
     let base_style = Style::new().padding(0, 1, 0, 1);
@@ -22,8 +22,22 @@ fn main() {
     type_colors.insert("Water", Color::from("#00E2C7"));
 
     let data = vec![
-        vec!["1", "Bulbasaur", "Grass", "Poison", "フシギダネ", "Fushigidane"],
-        vec!["2", "Ivysaur", "Grass", "Poison", "フシギソウ", "Fushigisou"],
+        vec![
+            "1",
+            "Bulbasaur",
+            "Grass",
+            "Poison",
+            "フシギダネ",
+            "Fushigidane",
+        ],
+        vec![
+            "2",
+            "Ivysaur",
+            "Grass",
+            "Poison",
+            "フシギソウ",
+            "Fushigisou",
+        ],
         vec!["25", "Pikachu", "Electric", "", "ピカチュウ", "Pikachu"],
     ];
 
@@ -49,7 +63,12 @@ fn main() {
         .border(normal_border())
         .border_style(Style::new().foreground(Color::from("238")))
         .headers(capitalize_headers(vec![
-            "#", "Name", "Type 1", "Type 2", "Japanese", "Official Rom.",
+            "#",
+            "Name",
+            "Type 1",
+            "Type 2",
+            "Japanese",
+            "Official Rom.",
         ]))
         .width(80)
         .rows(data)

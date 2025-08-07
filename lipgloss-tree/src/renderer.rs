@@ -425,7 +425,6 @@ impl Renderer {
                     .cloned()
                     .or_else(|| self.style.item_base.clone());
 
-
                 // Compute indent: for visible children use indenter(filtered, display_idx);
                 // for container (empty value) nodes, reuse the last visible indent so nested
                 // content attaches under the previous item.
@@ -465,7 +464,7 @@ impl Renderer {
                 } else {
                     user_pref.clone()
                 };
-                
+
                 // Apply alignment padding for custom enumerators
                 if !is_custom_enum {
                     // Built-in branch glyph - no alignment needed
@@ -477,12 +476,12 @@ impl Renderer {
                         node_prefix = format!("{}{}", " ".repeat(padding_needed), node_prefix);
                     }
                 }
-                
+
                 // CRITICAL: Apply either base style OR function style, NEVER both
                 // This prevents double-padding issues where both base and function styles add spacing
                 //
                 // PADDING_RIGHT BEHAVIOR:
-                // - TreeStyle::default() sets enumerator_func to add padding_right(1) 
+                // - TreeStyle::default() sets enumerator_func to add padding_right(1)
                 // - If enumerator_style (base) is set, it REPLACES the function entirely
                 // - The base style can include its own padding_right(1)
                 // - Go behavior: EnumeratorStyle() method replaces the default function
@@ -499,7 +498,7 @@ impl Renderer {
                     // No base style - use the function style (default or custom)
                     let enum_style_result = enum_style_func(&vis_children, idx);
                     let enum_lead = enum_style_result.render("");
-                    
+
                     // Check if this is a set_string style vs padding-only style
                     if !enum_lead.is_empty() && !enum_lead.trim().is_empty() {
                         // Set_string style with actual content (e.g., "+" prefix)
@@ -527,12 +526,12 @@ impl Renderer {
                     // Only apply function style if no base style is set
                     let item_style_result = item_style_func(&vis_children, idx);
                     let item_lead = item_style_result.render("");
-                    
+
                     // Check if this is a true set_string style vs padding-only style
                     // Padding-only styles render to whitespace-only strings (spaces, tabs, newlines)
                     // Set_string styles have non-whitespace content
                     let is_padding_only = item_lead.chars().all(|c| c.is_whitespace());
-                    
+
                     if is_padding_only {
                         // Apply the style function to the item directly (padding-only or no style)
                         item = item_style_result.render(&item);
@@ -573,17 +572,42 @@ impl Renderer {
                     // node_prefix: tree symbol with styling (e.g., "[color]├──[reset] " with padding_right)
                     // item: content with any item styling applied
                     //
-                    // KNOWN ISSUE: When tree is nested in list with 2-space list_indenter,
-                    // an extra space appears after tree symbols. This suggests list_indenter
-                    // affects tree content spacing beyond just the multiline_prefix.
-                    
+                    // BACKGROUND COLOR CONSISTENCY:
+                    // When tree components have background colors, we need to ensure the multiline_prefix
+                    // also gets the same background color to avoid black rectangular gaps.
+
+                    let styled_multiline_prefix = if !multiline_prefix.trim().is_empty() {
+                        // If there is indentation content, check if we should apply background styling
+                        // Priority: enum_base > item_base (prefer the enumerator background)
+                        if let Some(base) = &enum_base {
+                            // If enumerator has background, apply it to prefix indentation
+                            if base.get_background().is_some() {
+                                base.render(&multiline_prefix)
+                            } else {
+                                multiline_prefix.clone()
+                            }
+                        } else if let Some(base) = &item_base {
+                            // If item has background, apply it to prefix indentation
+                            if base.get_background().is_some() {
+                                base.render(&multiline_prefix)
+                            } else {
+                                multiline_prefix.clone()
+                            }
+                        } else {
+                            multiline_prefix.clone()
+                        }
+                    } else {
+                        multiline_prefix.clone()
+                    };
+
                     // DEBUG: Uncomment to debug spacing issues
-                    // eprintln!("DEBUG: multiline_prefix='{}', node_prefix='{}', item='{}'", 
-                    //           multiline_prefix.replace(' ', "·"), 
-                    //           node_prefix.replace(' ', "·"), 
+                    // eprintln!("DEBUG: multiline_prefix='{}', node_prefix='{}', item='{}'",
+                    //           styled_multiline_prefix.replace(' ', "·"),
+                    //           node_prefix.replace(' ', "·"),
                     //           item.replace(' ', "·"));
-                    
-                    let line = join_horizontal(TOP, &[&multiline_prefix, &node_prefix, &item]);
+
+                    let line =
+                        join_horizontal(TOP, &[&styled_multiline_prefix, &node_prefix, &item]);
                     strs.push(line);
                     // Remember raw indent for subsequent container nodes (before styling)
                     last_display_indent = raw_indent.clone();
@@ -596,48 +620,51 @@ impl Renderer {
                     // Use styled indent with enum styling applied to indenter characters
                     // This ensures custom indenters (like "->") get the same styling as enumerators
                     let styled_indent = indent.clone();
-                    
-                    // SMART INDENTATION LOGIC:  
+
+                    // SMART INDENTATION LOGIC:
                     // Trees nested in lists should not inherit the list's indenter to avoid double indentation.
                     let dummy_children = crate::children::NodeChildren::new();
                     let parent_indent_sample = indenter(&dummy_children, 0);
                     #[allow(unused_variables)]
-                    let is_parent_list_indenter = parent_indent_sample.trim() == "" && parent_indent_sample.len() == 2;
-                    
+                    let is_parent_list_indenter =
+                        parent_indent_sample.trim() == "" && parent_indent_sample.len() == 2;
+
                     let child_prefix = if let Some(child_indenter) = child.get_indenter() {
                         let child_indent_sample = child_indenter(&dummy_children, 0);
                         #[allow(unused_variables)]
-                        let is_child_tree_indenter = child_indent_sample.contains('│') || child_indent_sample.len() == 4;
-                        
+                        let is_child_tree_indenter =
+                            child_indent_sample.contains('│') || child_indent_sample.len() == 4;
+
                         // DEBUG: uncomment for debugging tree indentation
                         // if child.get_enumerator_style().is_some() {
-                        //     eprintln!("DEBUG TREE: parent_indent='{}', child_indent='{}', is_parent_list={}, is_child_tree={}, prefix_len={}", 
+                        //     eprintln!("DEBUG TREE: parent_indent='{}', child_indent='{}', is_parent_list={}, is_child_tree={}, prefix_len={}",
                         //         parent_indent_sample.replace(' ', "·"), child_indent_sample.replace(' ', "·"), is_parent_list_indenter, is_child_tree_indenter, prefix.len());
                         // }
-                        
+
                         // Always provide proper nesting prefix - the issue is tree's internal indentation, not prefix
                         format!("{}{}", prefix, styled_indent)
                     } else {
                         // Child has no specific indenter - inherit parent's indentation
                         format!("{}{}", prefix, styled_indent)
                     };
-                    
+
                     // Detect if child has style overrides (indicating it's a styled tree vs plain container)
-                    let has_style_overrides = child.get_enumerator_style().is_some() 
+                    let has_style_overrides = child.get_enumerator_style().is_some()
                         || child.get_item_style().is_some()
                         || child.get_enumerator_style_func().is_some()
                         || child.get_item_style_func().is_some();
-                    
+
                     // Special case: if this child is a tree with its own indenter, use fresh renderer
                     // to prevent list indenter from affecting tree's internal rendering
-                    let child_uses_tree_indenter = if let Some(child_indenter) = child.get_indenter() {
-                        let dummy = crate::children::NodeChildren::new();
-                        let sample = child_indenter(&dummy, 0);
-                        sample.contains('│') || sample.len() == 4
-                    } else {
-                        false
-                    };
-                    
+                    let child_uses_tree_indenter =
+                        if let Some(child_indenter) = child.get_indenter() {
+                            let dummy = crate::children::NodeChildren::new();
+                            let sample = child_indenter(&dummy, 0);
+                            sample.contains('│') || sample.len() == 4
+                        } else {
+                            false
+                        };
+
                     let mut child_renderer = if child_uses_tree_indenter {
                         // Tree child: use fresh renderer to avoid inheriting list behavior
                         Renderer::new()
@@ -647,10 +674,10 @@ impl Renderer {
                     } else {
                         // Child has no overrides: inherit parent's behavior
                         Renderer::new()
-                            .enumerator(self.enumerator)  
+                            .enumerator(self.enumerator)
                             .indenter(self.indenter)
                     };
-                    
+
                     // Apply any explicit functional overrides from the child node itself
                     if let Some(e) = child.get_enumerator() {
                         child_renderer = child_renderer.enumerator(*e);
@@ -658,21 +685,31 @@ impl Renderer {
                     if let Some(i) = child.get_indenter() {
                         child_renderer = child_renderer.indenter(*i);
                     }
-                    
+
                     // For style functions, use tree defaults unless child has specific overrides
                     // Children should inherit parent styles when they don't have their own
                     let style = TreeStyle {
-                        enumerator_func: child.get_enumerator_style_func().copied().unwrap_or(|_, _| Style::new().padding_right(1)),
-                        item_func: child.get_item_style_func().copied().unwrap_or(|_, _| Style::new()),
+                        enumerator_func: child
+                            .get_enumerator_style_func()
+                            .copied()
+                            .unwrap_or(|_, _| Style::new().padding_right(1)),
+                        item_func: child
+                            .get_item_style_func()
+                            .copied()
+                            .unwrap_or(|_, _| Style::new()),
                         root: Style::default(),
                         // Inherit parent's base styles if child doesn't have overrides
-                        enumerator_base: child.get_enumerator_style().cloned()
+                        enumerator_base: child
+                            .get_enumerator_style()
+                            .cloned()
                             .or_else(|| self.style.enumerator_base.clone()),
-                        item_base: child.get_item_style().cloned()
+                        item_base: child
+                            .get_item_style()
+                            .cloned()
                             .or_else(|| self.style.item_base.clone()),
                     };
                     child_renderer = child_renderer.style(style);
-                    
+
                     let mut child_output = child_renderer.render(child, false, &child_prefix);
                     // If this child is an unnamed container and there are later siblings that
                     // will render visible lines, ensure the container's last visible branch uses

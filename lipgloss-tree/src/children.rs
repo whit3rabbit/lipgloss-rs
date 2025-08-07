@@ -111,7 +111,7 @@ pub trait Node: fmt::Display + CloneNode {
     fn set_value(&mut self, value: String);
 
     // Optional per-node renderer overrides. Default to None.
-    
+
     /// Returns the custom enumerator function for this node, if any.
     ///
     /// The enumerator function generates branch characters (like ├──, └──)
@@ -412,7 +412,7 @@ impl NodeChildren {
     ///
     /// let mut children = NodeChildren::new();
     /// children.append(Box::new(Leaf::new("Remove me", false)));
-    /// 
+    ///
     /// let removed = children.remove(0);
     /// assert!(removed.is_some());
     /// assert_eq!(children.length(), 0);
@@ -1029,7 +1029,6 @@ impl Tree {
     pub fn get_enumerator_style(&self) -> Option<&Style> {
         self.enumerator_style.as_ref()
     }
-
 }
 
 impl Default for Tree {
@@ -1087,7 +1086,6 @@ impl Node for Tree {
     fn get_indenter(&self) -> Option<&crate::Indenter> {
         self.indenter.as_ref()
     }
-
 
     fn get_item_style(&self) -> Option<&Style> {
         self.item_style.as_ref()

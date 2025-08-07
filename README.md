@@ -2,7 +2,7 @@
 
 A port of [lipgloss](https://github.com/charmbracelet/lipgloss) to Rust which are style definitions for nice terminal layouts.
 
-![Rust Layout Demo](assets/layout-demo-min.png)
+![Rust Layout Demo](examples/layout-demo/demo.png)
 
 This is a Rust port of the excellent Go library of the same name, [**lipgloss**](https://github.com/charmbracelet/lipgloss), created by the talented team at [**Charm**](https://charm.sh). This port achieves **1:1 API compatibility** and **exact rendering parity** with the original Go implementation.
 
@@ -106,8 +106,12 @@ The terminal's background color will automatically be detected and the appropria
 
 `lipgloss-rs` includes advanced gradient capabilities using perceptually uniform color spaces for smooth, visually appealing transitions:
 
+#### Basic Gradients
+
+![Linear 1D Gradient](examples/blending/linear-1d/standalone/demo.png)
+
 ```rust
-use lipgloss::{gradient, bilinear_interpolation_grid, Style};
+use lipgloss::{gradient, Style};
 
 // Create smooth color gradients
 let colors = gradient("#FF0000", "#0000FF", 10);
@@ -118,12 +122,28 @@ for color in colors {
         .render("");
     print!("{}", block);
 }
+```
+
+#### 2D Bilinear Interpolation
+
+![Linear 2D Gradient](examples/blending/linear-2d/standalone/demo.png)
+
+```rust
+use lipgloss::bilinear_interpolation_grid;
 
 // 2D color grids with bilinear interpolation
 let grid = bilinear_interpolation_grid(
     8, 4,  // 8 columns, 4 rows
     ("#FF0000", "#00FF00", "#0000FF", "#FFFF00")  // corner colors
 );
+```
+
+#### Advanced Gradient Effects
+
+![Comprehensive Blending Demo](examples/blending/comprehensive-demo/demo.png)
+
+```rust
+use lipgloss::{gradient, Style};
 
 // Gradient text effects
 let text_colors = gradient("#FF6B6B", "#4ECDC4", 20);
@@ -137,6 +157,20 @@ for (i, ch) in text.chars().enumerate() {
         .render(&ch.to_string());
     result.push_str(&styled_char);
 }
+```
+
+#### Brightness and Color Mixing
+
+![Brightness Demo](examples/blending/brightness/demo.png)
+
+```rust
+use lipgloss::{Style, Color};
+
+// Brightness adjustments and color mixing
+let base_color = Color::from("#7C3AED");
+let bright_style = Style::new()
+    .background(base_color.lighten(0.3))
+    .foreground(Color::from("#FFFFFF"));
 ```
 
 ### Complete Colors

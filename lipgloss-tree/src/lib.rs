@@ -97,7 +97,7 @@
 /// Node and tree data structures for building hierarchical content.
 pub mod children;
 /// Functions for generating branch characters and indentation strings.
-pub mod enumerator;  
+pub mod enumerator;
 /// Core rendering engine with styling and formatting support.
 pub mod renderer;
 

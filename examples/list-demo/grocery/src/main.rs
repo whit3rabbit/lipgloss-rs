@@ -29,7 +29,9 @@ fn grocery_enumerator(items: &dyn Children, i: usize) -> String {
 fn enum_style_func(items: &dyn Children, i: usize) -> Style {
     let dim_enum_style = Style::new().foreground(Color::from("240")).margin_right(1);
 
-    let highlighted_enum_style = Style::new().foreground(Color::from("#00d787")).margin_right(1);
+    let highlighted_enum_style = Style::new()
+        .foreground(Color::from("#00d787"))
+        .margin_right(1);
 
     if let Some(item) = items.at(i) {
         let value = item.value();

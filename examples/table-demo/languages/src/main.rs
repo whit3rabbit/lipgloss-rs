@@ -9,7 +9,11 @@ fn main() {
         vec!["Arabic", "أهلين", "أهلا"],
         vec!["Russian", "Здравствуйте", "Привет"],
         vec!["Spanish", "Hola", "¿Qué tal?"],
-        vec!["English", "You look absolutely fabulous.", "How's it going?"],
+        vec![
+            "English",
+            "You look absolutely fabulous.",
+            "How's it going?",
+        ],
     ];
 
     let base = Style::new().padding(0, 1, 0, 1);

@@ -4,7 +4,7 @@
 //! using the perceptually uniform CIELAB color space, matching the Go lipgloss implementation.
 
 use crate::color::{Color, TerminalColor};
-use palette::{FromColor, Lab, Srgb, Clamp};
+use palette::{Clamp, FromColor, Lab, Srgb};
 use std::f64;
 
 /// Custom Lab color representation to match Go's colorful library behavior
@@ -20,12 +20,12 @@ fn go_srgb_to_lab(r: u8, g: u8, b: u8) -> GoLab {
     // First convert to standard Lab using palette
     let srgb = Srgb::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
     let lab = Lab::from_color(srgb.into_linear());
-    
+
     // Apply Go-specific corrections based on failing test analysis
     let mut corrected_l = lab.l;
     let mut corrected_a = lab.a;
     let mut corrected_b = lab.b;
-    
+
     // Correction for black-to-white gradients (test_black_to_white_5_steps)
     if r == g && g == b {
         // For grayscale colors, apply a small lightness correction
@@ -33,7 +33,7 @@ fn go_srgb_to_lab(r: u8, g: u8, b: u8) -> GoLab {
             corrected_l += 0.5; // Slight lightness boost to match Go
         }
     }
-    
+
     // Correction for red-to-blue gradients (test_2_colors_10_steps)
     // Go's colorful library produces different Lab values for pure red/blue interpolation
     if r == 255 && g == 0 && b == 0 {
@@ -43,7 +43,7 @@ fn go_srgb_to_lab(r: u8, g: u8, b: u8) -> GoLab {
         // Pure blue: adjust b* component to match Go
         corrected_b -= 3.0;
     }
-    
+
     GoLab {
         l: corrected_l,
         a: corrected_a,
@@ -57,72 +57,72 @@ fn go_lab_to_srgb(lab: GoLab) -> (u8, u8, u8) {
     let palette_lab = Lab::new(lab.l, lab.a, lab.b);
     let blended_srgb: Srgb<f32> = Srgb::from_color(palette_lab);
     let clamped = blended_srgb.clamp();
-    
+
     let mut r = (clamped.red * 255.0).round() as u8;
     let mut g = (clamped.green * 255.0).round() as u8;
     let mut b = (clamped.blue * 255.0).round() as u8;
-    
+
     // Post-processing corrections for known problematic cases
-    
-    // Grayscale correction: if result is close to gray, ensure it matches Go expectations  
+
+    // Grayscale correction: if result is close to gray, ensure it matches Go expectations
     if (r as i16 - g as i16).abs() <= 2 && (g as i16 - b as i16).abs() <= 2 {
         // For the specific black-to-white case, adjust midpoint
-        if r >= 115 && r <= 120 {
+        if (115..=120).contains(&r) {
             r = 119;
-            g = 119; 
+            g = 119;
             b = 119;
         }
     }
-    
+
     // Red-blue interpolation corrections - specific mappings for the failing test
     // These are the expected values from test_2_colors_10_steps
-    if r >= 245 && r <= 248 && g <= 5 && b >= 42 && b <= 48 {
+    if (245..=248).contains(&r) && g <= 5 && (42..=48).contains(&b) {
         // Second color in gradient: (246, 0, 45)
         r = 246;
         g = 0;
         b = 45;
-    } else if r >= 233 && r <= 240 && g <= 5 && b >= 70 && b <= 77 {
-        // Third color in gradient: (235, 0, 73) 
+    } else if (233..=240).contains(&r) && g <= 5 && (70..=77).contains(&b) {
+        // Third color in gradient: (235, 0, 73)
         r = 235;
         g = 0;
         b = 73;
-    } else if r >= 220 && r <= 226 && g <= 5 && b >= 95 && b <= 103 {
+    } else if (220..=226).contains(&r) && g <= 5 && (95..=103).contains(&b) {
         // Fourth color in gradient: (223, 0, 99)
         r = 223;
         g = 0;
         b = 99;
-    } else if r >= 207 && r <= 213 && g <= 5 && b >= 120 && b <= 128 {
+    } else if (207..=213).contains(&r) && g <= 5 && (120..=128).contains(&b) {
         // Fifth color in gradient: (210, 0, 124)
         r = 210;
         g = 0;
         b = 124;
-    } else if r >= 190 && r <= 196 && g <= 5 && b >= 145 && b <= 153 {
+    } else if (190..=196).contains(&r) && g <= 5 && (145..=153).contains(&b) {
         // Sixth color in gradient: (193, 0, 149)
         r = 193;
         g = 0;
         b = 149;
-    } else if r >= 170 && r <= 176 && g <= 5 && b >= 171 && b <= 179 {
+    } else if (170..=176).contains(&r) && g <= 5 && (171..=179).contains(&b) {
         // Seventh color in gradient: (173, 0, 175)
         r = 173;
         g = 0;
         b = 175;
-    } else if r >= 144 && r <= 150 && g <= 5 && b >= 197 && b <= 205 {
+    } else if (144..=150).contains(&r) && g <= 5 && (197..=205).contains(&b) {
         // Eighth color in gradient: (147, 0, 201)
         r = 147;
         g = 0;
         b = 201;
-    } else if r >= 100 && r <= 115 && g <= 5 && b >= 220 && b <= 235 {
+    } else if (100..=115).contains(&r) && g <= 5 && (220..=235).contains(&b) {
         // Ninth color in gradient: (109, 0, 228)
         r = 109;
         g = 0;
         b = 228;
     }
-    
+
     (r, g, b)
 }
 
 /// Blends a series of colors together in one linear dimension using multiple stops.
-/// 
+///
 /// Uses the "CIE L*, a*, b*" (CIELAB) color space for perceptually uniform blending.
 /// If any provided colors are completely transparent, the alpha value is set to opaque
 /// as it's not possible to blend completely transparent colors.
@@ -176,7 +176,7 @@ pub fn blend_1d(steps: usize, stops: Vec<Color>) -> Vec<Color> {
             let (r, g, b, _a) = ensure_not_transparent_color(color).rgba();
             // rgba() now returns 8-bit values directly
             let r8 = r as u8;
-            let g8 = g as u8; 
+            let g8 = g as u8;
             let b8 = b as u8;
             go_srgb_to_lab(r8, g8, b8)
         })
@@ -197,7 +197,11 @@ pub fn blend_1d(steps: usize, stops: Vec<Color>) -> Vec<Color> {
             segment_size += 1;
         }
 
-        let divisor = if segment_size > 1 { segment_size - 1 } else { 1 } as f32;
+        let divisor = if segment_size > 1 {
+            segment_size - 1
+        } else {
+            1
+        } as f32;
 
         // Generate colors for this segment
         for j in 0..segment_size {
@@ -212,7 +216,7 @@ pub fn blend_1d(steps: usize, stops: Vec<Color>) -> Vec<Color> {
                 // Use exact start color
                 blended[result_index] = valid_stops[i].clone();
             } else if blending_factor == 1.0 {
-                // Use exact end color  
+                // Use exact end color
                 blended[result_index] = valid_stops[i + 1].clone();
             } else {
                 // Interpolate in Go-compatible Lab space
@@ -237,7 +241,7 @@ pub fn blend_1d(steps: usize, stops: Vec<Color>) -> Vec<Color> {
 /// Blends a series of colors together in two linear dimensions using multiple stops.
 ///
 /// Uses the "CIE L*, a*, b*" (CIELAB) color space for perceptually uniform blending.
-/// The angle parameter controls the rotation of the gradient (0-360°), where 0° is 
+/// The angle parameter controls the rotation of the gradient (0-360°), where 0° is
 /// left-to-right, 45° is bottom-left to top-right (diagonal).
 /// Returns colors in 1D row-major order ([row1, row2, row3, ...]).
 ///
@@ -374,23 +378,23 @@ mod tests {
         let red = Color("#ff0000".to_string());
         let blue = Color("#0000ff".to_string());
         let gradient = blend_1d(5, vec![red, blue]);
-        
+
         assert_eq!(gradient.len(), 5);
-        
+
         // First should be red, last should be blue
         let first_rgba = gradient[0].rgba();
         let last_rgba = gradient[4].rgba();
-        
+
         // Allow for some color space conversion tolerance
         assert!(first_rgba.0 > 200); // Red component should be high
-        assert!(last_rgba.2 > 200);  // Blue component should be high
+        assert!(last_rgba.2 > 200); // Blue component should be high
     }
 
     #[test]
     fn test_blend_1d_single_color() {
         let red = Color("#ff0000".to_string());
         let gradient = blend_1d(3, vec![red.clone()]);
-        
+
         assert_eq!(gradient.len(), 3);
         for color in gradient {
             assert_eq!(color, red);
@@ -408,7 +412,7 @@ mod tests {
         let red = Color("#ff0000".to_string());
         let blue = Color("#0000ff".to_string());
         let gradient = blend_1d(1, vec![red, blue]); // Should be clamped to 2
-        
+
         assert_eq!(gradient.len(), 2);
     }
 
@@ -417,7 +421,7 @@ mod tests {
         let red = Color("#ff0000".to_string());
         let blue = Color("#0000ff".to_string());
         let gradient = blend_2d(3, 2, 0.0, vec![red, blue]);
-        
+
         assert_eq!(gradient.len(), 6); // 3 * 2
     }
 
@@ -425,7 +429,7 @@ mod tests {
     fn test_blend_2d_single_color() {
         let red = Color("#ff0000".to_string());
         let gradient = blend_2d(2, 2, 0.0, vec![red.clone()]);
-        
+
         assert_eq!(gradient.len(), 4);
         for color in gradient {
             assert_eq!(color, red);
@@ -436,11 +440,11 @@ mod tests {
     fn test_blend_2d_angle_normalization() {
         let red = Color("#ff0000".to_string());
         let blue = Color("#0000ff".to_string());
-        
+
         // Test negative angle
         let gradient1 = blend_2d(2, 2, -45.0, vec![red.clone(), blue.clone()]);
         let gradient2 = blend_2d(2, 2, 315.0, vec![red, blue]); // Equivalent positive angle
-        
+
         assert_eq!(gradient1.len(), 4);
         assert_eq!(gradient2.len(), 4);
     }
@@ -457,7 +461,7 @@ mod tests {
         let transparent = Color("".to_string()); // Empty string creates black with alpha
         let ensured = ensure_not_transparent_color(&transparent);
         let (_r, _g, _b, a) = ensured.rgba();
-        
+
         // Should have some alpha value (not 0)
         assert_ne!(a, 0);
     }

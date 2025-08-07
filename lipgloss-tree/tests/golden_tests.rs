@@ -143,7 +143,9 @@ fn test_tree_custom_enumerators_and_styles() {
     set_color_profile(ColorProfileKind::ANSI);
     // Mimic TestTreeCustom: customize enumerator/indenter and styles (blue arrows, red items)
     // Use bright blue (94) and bright red (91) to match golden output
-    let enum_style = lipgloss::Style::new().foreground(lipgloss::Color::from("94")).padding_right(1);
+    let enum_style = lipgloss::Style::new()
+        .foreground(lipgloss::Color::from("94"))
+        .padding_right(1);
     let item_style = lipgloss::Style::new().foreground(lipgloss::Color::from("91"));
 
     let tr = Tree::new()
@@ -422,7 +424,10 @@ fn test_tree_table() {
         .row(vec!["Qux", "Baz"])
         .render();
 
-    let tr = Tree::new()
-        .child(child!["Foo", root("Bar").child(child!["Baz", "Baz", tbl, "Baz"]), "Qux"]);
+    let tr = Tree::new().child(child![
+        "Foo",
+        root("Bar").child(child!["Baz", "Baz", tbl, "Baz"]),
+        "Qux"
+    ]);
     assert_matches_golden(&format!("{}", tr), "TestTreeTable.golden");
 }

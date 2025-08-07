@@ -1,7 +1,7 @@
 // This example demonstrates how to use the blend_2d function to create
 // beautiful 2D color gradients in a standalone lipgloss-rs application.
 
-use lipgloss::{blend_2d, Color, Style, rounded_border, CENTER};
+use lipgloss::{blend_2d, rounded_border, Color, Style, CENTER};
 
 fn main() {
     // Define gradient presets with different angles matching the Go implementation
@@ -16,7 +16,7 @@ fn main() {
             45.0,
         ),
         (
-            "Ocean Wave", 
+            "Ocean Wave",
             vec![
                 Color::from("#0077B6"), // Deep Blue
                 Color::from("#48CAE4"), // Sky Blue
@@ -59,15 +59,14 @@ fn main() {
         .margin_bottom(1)
         .align_horizontal(CENTER);
 
-    let gradient_style = Style::new()
-        .border(rounded_border())
-        .margin_bottom(1);
+    let gradient_style = Style::new().border(rounded_border()).margin_bottom(1);
 
-    let gradient_name_style = Style::new()
-        .bold(true)
-        .margin_bottom(1);
+    let gradient_name_style = Style::new().bold(true).margin_bottom(1);
 
-    println!("{}", title_style.render("2D Color Gradient Examples with Blend2D"));
+    println!(
+        "{}",
+        title_style.render("2D Color Gradient Examples with Blend2D")
+    );
     println!();
 
     for (name, colors, angle) in gradients {
@@ -89,7 +88,10 @@ fn main() {
             }
         }
 
-        println!("{}", gradient_name_style.render(&format!("{} (Angle: {}°)", name, angle as i32)));
+        println!(
+            "{}",
+            gradient_name_style.render(&format!("{} (Angle: {}°)", name, angle as i32))
+        );
         println!();
         println!("{}", gradient_style.render(&gradient_box));
         println!();
