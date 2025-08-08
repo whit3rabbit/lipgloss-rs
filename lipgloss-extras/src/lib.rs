@@ -72,5 +72,3 @@ mod tests {
         let _ = crate::table::Table::new();
     }
 }
-
-
