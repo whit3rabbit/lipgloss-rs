@@ -24,6 +24,34 @@ This section summarizes the public API currently exported by the Rust workspace 
 Repositories in scope:
 - Core: `lipgloss/src`
 - Extensions: `lipgloss-list`, `lipgloss-tree`, `lipgloss-table`
+ - Facade (optional): `lipgloss-extras` (re-exports core and extras behind features)
+
+### Using the facade crate (`lipgloss-extras`)
+
+API surface is unchanged; only import paths differ if you choose the facade:
+
+```toml
+[dependencies]
+lipgloss-extras = { version = "0.0.7", features = ["full"] }
+```
+
+```rust
+// Core via facade
+use lipgloss_extras::lipgloss::{Style, Color};
+
+// Or bring common items into scope
+use lipgloss_extras::prelude::*;
+
+// Extras when features enabled
+#[cfg(feature = "lists")]
+use lipgloss_extras::list::List;
+#[cfg(feature = "trees")]
+use lipgloss_extras::tree::Tree;
+#[cfg(feature = "tables")]
+use lipgloss_extras::table::Table;
+```
+
+If you already depend on `lipgloss` directly, you can keep your existing imports (`use lipgloss::...`) and add `lipgloss-extras` alongside only for the feature-gated extras. No API method changes are required.
 
 ## Core crate: `lipgloss`
 
@@ -215,6 +243,72 @@ Re-exports (from `lipgloss-tree/src/lib.rs`):
 - Constructors: `new() -> Tree`, `new_with_root(root) -> Tree`
 - Enumerators and indenters: `default_enumerator`, `rounded_enumerator`, `default_indenter`
 - Renderer: `lipgloss_tree::Renderer` (separate from core `lipgloss::Renderer`)
+ 
+ ### Renderer Styles: `TreeStyle`
+ 
+ The `Renderer` styling is controlled via the public `TreeStyle` struct. This is central to customizing a tree's appearance.
+ 
+ Fields (from `renderer.rs`):
+ - `enumerator_func: StyleFunc` — style for the enumerator (branch/prefix) per child index
+ - `item_func: StyleFunc` — style for the item content per child index
+ - `enumerator_base: Option<Style>` — base style applied to all enumerators
+ - `item_base: Option<Style>` — base style applied to all items
+ - `root: Style` — style for the root item
+ 
+ Notes:
+ - Default `TreeStyle` applies `padding_right(1)` to enumerators to match Go’s trailing-space behavior.
+ - Override any field to customize how nodes render.
+ 
+ Example:
+ ```rust
+ use lipgloss::Style;
+ use lipgloss_tree::{Renderer, Children};
+ use lipgloss_tree::renderer::TreeStyle;
+ 
+ let style = TreeStyle {
+     enumerator_func: |_c, i| if i % 2 == 0 { Style::new().bold(true) } else { Style::new() },
+     item_func: |_c, _i| Style::new(),
+     enumerator_base: None,
+     item_base: None,
+     root: Style::new().underline(true),
+ };
+ 
+ let mut r = Renderer::new();
+ r = r.with_style(style);
+ ```
+ 
+ ### Filtering Children: `Filter`
+ 
+ The `Filter` struct is re-exported and available to users for filtering children displayed by the renderer.
+ 
+ - Path: `lipgloss_tree::Filter` (from `children.rs`)
+ - Usage: wrap a `Children` provider and apply a predicate to include/exclude indices.
+ 
+ Example:
+ ```rust
+ use lipgloss_tree::{Filter, new_string_data, Children};
+ let data = new_string_data(&["A", "B", "C", "D"]);
+ let filtered = Filter::new(Box::new(data)).filter(|i| i % 2 == 0); // Keep even indices
+ ```
+ 
+ ### Helper Functions
+ 
+ - `new_string_data(&[&str]) -> NodeChildren` — convenience to create children from string slices.
+ - `root(impl Into<String>) -> Tree` — convenience to create a `Tree` with a root value.
+ 
+ Example:
+ ```rust
+ use lipgloss_tree::{new_string_data, root};
+ let children = new_string_data(&["Foo", "Bar"]);
+ let tree = root("Root").with_children(children);
+ ```
+ 
+ ### Go Compatibility Aliases
+ 
+ For users migrating from Go, the crate provides aliases:
+ - `TreeType = Tree`
+ - `LeafType = Leaf`
+ - `NodeChildrenType = NodeChildren`
 
 ## Tables: `lipgloss-table`
 
@@ -226,6 +320,108 @@ Public surface (high level):
 
 Status vs Go:
 - Core APIs largely mirror Go; table resizing and row APIs map to `resizing.go`/`rows.go`
+ 
+ ### Data Model
+ 
+ The table accepts any data source implementing the public `Data` trait (in `rows.rs`).
+ 
+ - `trait Data` — interface for table models:
+   - `fn at(&self, row: usize, cell: usize) -> String`
+   - `fn rows(&self) -> usize`
+   - `fn columns(&self) -> usize`
+ 
+ - `struct StringData` — default string-backed `Data` implementation:
+   - Constructors: `StringData::new(Vec<Vec<String>>)` and `StringData::empty()`
+   - Methods: `append(Vec<String>)`, builder-style `item(Vec<String>)`
+ 
+ - `struct Filter<D: Data>` — wraps any `Data` and filters rows by predicate:
+   - `Filter::new(D)` → `Self`
+   - `.filter(|row_idx| -> bool)` to include rows
+   - Implements `Data` so it can be used directly with the table
+ 
+ Example:
+ ```rust
+ use lipgloss_table::Table;
+ use lipgloss_table::rows::{StringData, Filter, Data};
+ 
+ let base = StringData::new(vec![
+     vec!["A".into(), "1".into()],
+     vec!["B".into(), "2".into()],
+     vec!["C".into(), "3".into()],
+ ]);
+ let filtered = Filter::new(base).filter(|i| i != 1);
+ let table = Table::new().data(filtered);
+ ```
+ 
+ ### Constants and Types
+ 
+ - `pub const HEADER_ROW: i32` — sentinel for the header row. Useful in style functions.
+ - `pub type BoxedStyleFunc = Box<dyn Fn(i32, usize) -> Style + Send + Sync>` — for advanced styling closures that capture variables.
+ 
+ ### Predefined Style Functions
+ 
+ Helper functions you can pass to `Table::style_func(...)`:
+ - `header_row_style(row, col) -> Style` — bold header row.
+ - `zebra_style(row, col) -> Style` — alternates style for odd/even rows.
+ - `minimal_style(row, col) -> Style` — minimal styling.
+ - `column_style_func(Vec<(usize, Style)>) -> impl Fn(i32, usize) -> Style` — per-column styles.
+ 
+ Example:
+ ```rust
+ use lipgloss::{Style, Color};
+ use lipgloss_table::{Table, HEADER_ROW, header_row_style, zebra_style, column_style_func};
+ 
+ let per_col = column_style_func(vec![
+     (0, Style::new().bold(true)),
+     (1, Style::new().foreground(Color::from("#888"))),
+ ]);
+ 
+ let table = Table::new()
+     .headers(["Name", "Qty"]) 
+     .style_func(header_row_style) // Built-in header emphasis
+     .style_func(per_col)          // Column-specific styles
+     .style_func(zebra_style);     // Row striping
+ ```
+ 
+ ### Table Builder API (selected)
+ 
+ In addition to `headers`, `rows`, and `row`, the builder provides:
+ 
+ - Dimensions
+   - `width(i32)` — set fixed width; 0 means autosize from content
+   - `height(i32)` — set fixed height; 0 means autosize from content
+   - `wrap(bool)` — enable/disable text wrapping within cells
+   - `offset(usize)` — vertical scroll/pagination offset
+ 
+ - Borders and styles
+   - `border_style(Style)` — style applied to the border box
+   - `border_top(bool)`, `border_right(bool)`, `border_bottom(bool)`, `border_left(bool)`
+   - `border_header(bool)` — header separator toggle
+   - `border_column(bool)`, `border_row(bool)` — column/row separators
+ 
+ - Data
+   - `data(D: Data)` — supply a custom data source (e.g., `Filter<StringData>`)
+   - `clear_rows()` — remove all row data (resets to empty `StringData`)
+ 
+ Example:
+ ```rust
+ use lipgloss::{rounded_border, Style, Color};
+ use lipgloss_table::{Table, minimal_style};
+ 
+ let out = Table::new()
+     .headers(["Col A", "Col B"]) 
+     .rows(vec![vec!["x".into(), "1".into()], vec!["y".into(), "2".into()]])
+     .width(40)
+     .height(8)
+     .wrap(true)
+     .offset(0)
+     .border(rounded_border())
+     .border_style(Style::new().foreground(Color::from("#777")))
+     .border_top(true).border_right(true).border_bottom(true).border_left(true)
+     .border_header(true).border_column(true).border_row(false)
+     .style_func(minimal_style)
+     .to_string();
+ ```
 
 ## Go ↔ Rust API Comparison (Highlights)
 
@@ -485,6 +681,33 @@ for (i, color) in gradient_2d.iter().enumerate() {
 }
 ```
 
+#### Curated Example: Blend1D presets
+
+Real-world gradient presets rendered with `blend_1d` (adapted from examples/blending/linear-1d/standalone):
+
+```rust
+use lipgloss::{rounded_border, Color, Style};
+use lipgloss::blending::blend_1d;
+
+let presets = vec![
+    ("Sunset", vec![Color::from("#FF6B6B"), Color::from("#FFB74D"), Color::from("#FFDFBA")]),
+    ("Ocean",  vec![Color::from("#0077B6"), Color::from("#48CAE4"), Color::from("#ADE8F4")]),
+];
+
+let frame = Style::new().border(rounded_border()).margin_bottom(1);
+for (name, stops) in presets {
+    let bar: String = blend_1d(40, stops)
+        .into_iter()
+        .map(|c| Style::new().foreground(c).render("█"))
+        .collect();
+    println!("{}\n   {}\n", frame.render(&bar), name);
+}
+```
+
+Source: [examples/blending/linear-1d/standalone/src/main.rs](../examples/blending/linear-1d/standalone/src/main.rs)
+
+When to use: showcase multi-stop 1D gradients for banners, bars, and headings; pair with borders and alignment for visually rich sections.
+
 #### Advanced: RGB Gradient Creation
 
 ```rust
@@ -513,6 +736,8 @@ for color in colors {
 - **Go Parity**: Matches the behavior of Go's `gamut.Blends()` and `colorful` library functionality
 - **Type Safety**: Returns `Vec<Color>` for seamless integration with lipgloss styling
 
+See also: Lists, Trees, Tables
+
 ### Lists
 
 Go:
@@ -529,6 +754,51 @@ use lipgloss_list::{List, arabic};
 let l = List::new().items(vec!["Foo", "Bar", "Baz"]).enumerator(arabic);
 println!("{}", l);
 ```
+
+#### Curated Example: Grocery list with style functions
+
+Demonstrates custom enumerator and per-item styling (strike-through purchased items):
+
+```rust
+use lipgloss::{Color, Style};
+use lipgloss_list::List;
+use lipgloss_tree::Children;
+
+static PURCHASED: &[&str] = &["Bananas", "Barley", "Cashews", "Coconut Milk"];
+
+fn grocery_enumerator(items: &dyn Children, i: usize) -> String {
+    if let Some(item) = items.at(i) {
+        if PURCHASED.contains(&item.value()) { return "✓".into(); }
+    }
+    "•".into()
+}
+
+fn enum_style(items: &dyn Children, i: usize) -> Style {
+    let dim = Style::new().foreground(Color::from("240")).margin_right(1);
+    let hi = Style::new().foreground(Color::from("#00d787")).margin_right(1);
+    if let Some(it) = items.at(i) { if PURCHASED.contains(&it.value()) { return hi; } }
+    dim
+}
+
+fn item_style(items: &dyn Children, i: usize) -> Style {
+    let base = Style::new().foreground(Color::from("255"));
+    if let Some(it) = items.at(i) { if PURCHASED.contains(&it.value()) { return base.strikethrough(true); } }
+    base
+}
+
+let l = List::new()
+    .items(vec!["Artichoke", "Bananas", "Cashews", "Coconut Milk"]) 
+    .enumerator(grocery_enumerator)
+    .enumerator_style_func(enum_style)
+    .item_style_func(item_style);
+println!("{}", l);
+```
+
+Source: [examples/list-demo/grocery/src/main.rs](../examples/list-demo/grocery/src/main.rs)
+
+When to use: lists that need dynamic markers and conditional styling per item (e.g., completed tasks, purchased items).
+
+See also: Gradients, Trees, Tables
 
 ### Trees
 
@@ -547,6 +817,120 @@ let t = tree::new_with_root("root").child(tree::Tree::new().root("child"));
 println!("{}", t);
 ```
 
+#### Curated Example: Filesystem tree with styles
+
+Renders the current directory as a tree with styled root and enumerator:
+
+```rust
+use std::path::Path;
+use lipgloss::{Color, Style};
+use lipgloss_tree::{Leaf, Node, Tree};
+
+fn build_nodes(path: &Path) -> std::io::Result<Vec<Box<dyn Node>>> {
+    let mut nodes: Vec<Box<dyn Node>> = Vec::new();
+    for entry in std::fs::read_dir(path)?.filter_map(Result::ok) {
+        let name = entry.file_name().to_string_lossy().to_string();
+        if entry.file_type()?.is_dir() {
+            let children = build_nodes(&entry.path())?;
+            nodes.push(Box::new(Tree::new().root(name).child(children)) as Box<dyn Node>);
+        } else {
+            nodes.push(Box::new(Leaf::new(name, false)) as Box<dyn Node>);
+        }
+    }
+    Ok(nodes)
+}
+
+let enumerator_style = Style::new().foreground(Color::from("240")).padding_right(1);
+let item_style = Style::new().foreground(Color::from("99")).bold(true).padding_right(1);
+
+let children = build_nodes(Path::new("."))?;
+let t = Tree::new()
+    .root(std::env::current_dir()?.to_string_lossy())
+    .enumerator_style(enumerator_style)
+    .root_style(item_style.clone())
+    .item_style(item_style)
+    .child(children);
+println!("{}", t);
+```
+
+Source: [examples/tree-demo/files/src/main.rs](../examples/tree-demo/files/src/main.rs)
+
+When to use: visualizing folder-like hierarchies where root and branch labeling benefits from distinct styling.
+
+#### Curated Example: Rounded enumerator (groceries)
+
+Uses the rounded enumerator preset for a softer tree look:
+
+```rust
+use lipgloss::{Color, Style};
+use lipgloss_tree::{rounded_enumerator, Leaf, Node, Tree};
+
+let item_style = Style::new().margin_right(1);
+let enumerator_style = Style::new().foreground(Color::from("8")).margin_right(1);
+
+let t = Tree::new()
+    .root("Groceries")
+    .child(vec![
+        Box::new(Tree::new().root("Fruits").child(vec![
+            Box::new(Leaf::new("Blood Orange", false)) as Box<dyn Node>,
+            Box::new(Leaf::new("Papaya", false)) as Box<dyn Node>,
+        ])) as Box<dyn Node>,
+        Box::new(Tree::new().root("Veggies").child(vec![
+            Box::new(Leaf::new("Leek", false)) as Box<dyn Node>,
+        ])) as Box<dyn Node>,
+    ])
+    .item_style(item_style)
+    .enumerator_style(enumerator_style)
+    .enumerator(rounded_enumerator);
+
+println!("{}", t);
+```
+
+Source: [examples/tree-demo/rounded/src/main.rs](../examples/tree-demo/rounded/src/main.rs)
+
+When to use: trees for menus, catalogs, and lists where a rounded branch style enhances readability and aesthetics.
+
+#### Curated Example: Toggle tree with background block (ANSI-safe)
+
+Shows wrapping a rendered tree with a background-colored block using `color_whitespace(true)` and removing reset codes to prevent background interruption:
+
+```rust
+use lipgloss::{Color, Style};
+use lipgloss_tree::{rounded_enumerator, Leaf, Node, Tree};
+
+// Outer block paints background across all whitespace
+let block = Style::new()
+    .background(Color::from("57"))
+    .padding(1, 3, 1, 3)
+    .margin(1, 3, 1, 3)
+    .width(40)
+    .color_whitespace(true);
+
+// Branches and content inherit foreground; keep inline to minimize resets
+let enumerator = Style::new().foreground(Color::from("212")).padding_right(1);
+let dir = Style::new().foreground(Color::from("225")).inline(true);
+let file = Style::new().foreground(Color::from("225"));
+
+let t = Tree::new()
+    .root(dir.render("~/charm"))
+    .enumerator(rounded_enumerator)
+    .enumerator_style(enumerator)
+    .child(vec![
+        Box::new(Leaf::new(file.render("zsh"), false)) as Box<dyn Node>,
+        Box::new(Leaf::new(file.render("doom-emacs"), false)) as Box<dyn Node>,
+    ]);
+
+// Remove reset codes so the block background remains continuous
+let cleaned = t.to_string().replace("\x1b[0m", "");
+println!("{}", block.render(&cleaned));
+```
+
+Source: [examples/tree-demo/toggle/src/main.rs](../examples/tree-demo/toggle/src/main.rs)
+
+When to use: emphasize trees with a solid background or card-like block without breaking background across wrapped lines.
+
+See also: Gradients, Lists, Tables
+
 ### Tables
 
 Go:
@@ -563,6 +947,99 @@ use lipgloss_table::Table;
 let tbl = Table::new().headers(vec!["A", "B"]).row(vec!["1", "2"]);
 println!("{}", tbl.render());
 ```
+
+#### Curated Example: Pokémon table with dynamic styling
+
+Highlights header, stripes rows, and colors Type columns; also highlights a selected row:
+
+```rust
+use std::collections::HashMap;
+use lipgloss::{style::Style, Color, normal_border};
+use lipgloss_table::{Table, HEADER_ROW};
+
+let base = Style::new().padding(0, 1, 0, 1);
+let header = base.clone().foreground(Color::from("252")).bold(true);
+let selected = base.clone().foreground(Color::from("#01BE85")).background(Color::from("#00432F"));
+
+let mut type_colors = HashMap::new();
+type_colors.insert("Electric", Color::from("#FDFF90"));
+type_colors.insert("Grass", Color::from("#75FBAB"));
+type_colors.insert("Poison", Color::from("#7D5AFC"));
+
+let data = vec![
+    vec!["1", "Bulbasaur", "Grass", "Poison", "フシギダネ", "Fushigidane"],
+    vec!["25", "Pikachu", "Electric", "", "ピカチュウ", "Pikachu"],
+];
+
+let data_clone = data.clone();
+let style_func = move |row: i32, col: usize| {
+    if row == HEADER_ROW { return header.clone(); }
+    if data_clone[row as usize][1] == "Pikachu" { return selected.clone(); }
+    if matches!(col, 2 | 3) {
+        if let Some(c) = type_colors.get(data_clone[row as usize][col]) {
+            return base.clone().foreground(c.clone());
+        }
+    }
+    base.clone()
+};
+
+let t = Table::new()
+    .border(normal_border())
+    .headers(vec!["#", "Name", "Type 1", "Type 2", "Japanese", "Official Rom."])
+    .rows(data)
+    .width(80)
+    .style_func_boxed(style_func);
+
+println!("{}", t);
+```
+
+Source: [examples/table-demo/pokemon/src/main.rs](../examples/table-demo/pokemon/src/main.rs)
+
+When to use: dashboards and data viewers that need per-row and per-column dynamic styling, including highlighting selections.
+
+#### Curated Example: Languages table (wrapping and alignment)
+
+Demonstrates thick borders, centered headers, and wrapping of multilingual content:
+
+```rust
+use lipgloss::{style::Style, thick_border, Color, CENTER};
+use lipgloss_table::{Table, HEADER_ROW};
+
+let data: Vec<Vec<&str>> = vec![
+    vec!["Chinese", "您好", "你好"],
+    vec!["Japanese", "こんにちは", "やあ"],
+    vec!["Arabic", "أهلين", "أهلا"],
+    vec!["Russian", "Здравствуйте", "Привет"],
+    vec!["English", "You look absolutely fabulous.", "How's it going?"],
+];
+
+let base = Style::new().padding(0, 1, 0, 1);
+let header = base.clone().bold(true).align_horizontal(CENTER);
+let formal = base.clone();
+let informal = base.clone();
+
+let style_func = move |row: i32, col: usize| -> Style {
+    if row == HEADER_ROW { return header.clone(); }
+    match col { 1 => formal.clone(), 2 => informal.clone(), _ => base.clone() }
+};
+
+let t = Table::new()
+    .border(thick_border())
+    .border_style(Style::new().foreground(Color::from("238")))
+    .wrap(true)
+    .headers(vec!["LANGUAGE", "FORMAL", "INFORMAL"])
+    .width(46)
+    .rows(data)
+    .style_func_boxed(style_func);
+
+println!("{}", t);
+```
+
+Source: [examples/table-demo/languages/src/main.rs](../examples/table-demo/languages/src/main.rs)
+
+When to use: content-heavy tables with variable-width text where wrapping and clear header alignment are important.
+
+See also: Gradients, Lists, Trees
 
 ### Style Method Matrix (Go ↔ Rust)
 

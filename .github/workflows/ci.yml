@@ -40,12 +40,12 @@ jobs:
       with:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-    - name: Build library
-      run: cargo build --lib
-    - name: Run unit and integration tests (lib only)
-      run: cargo test --lib --tests
+    - name: Build workspace
+      run: cargo build --workspace --all-features
+    - name: Run unit and integration tests (workspace)
+      run: cargo test --workspace --all-features
     - name: Run doc tests
-      run: cargo test --doc
+      run: cargo test --doc --workspace
 
   clippy:
     name: Clippy
@@ -56,8 +56,8 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
-    - name: Run clippy
-      run: cargo clippy --lib --tests --all-features -- -D warnings
+    - name: Run clippy (workspace)
+      run: cargo clippy --workspace --all-features --tests -- -D warnings
 
   fmt:
     name: Rustfmt

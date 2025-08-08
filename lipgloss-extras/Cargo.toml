@@ -1,0 +1,30 @@
+[package]
+name = "lipgloss-extras"
+version.workspace = true
+edition = "2021"
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords = ["tui", "cli", "terminal", "style", "layout"]
+categories = ["command-line-interface", "text-processing"]
+description = "Facade crate that re-exports lipgloss and optional list/tree/table crates behind features."
+
+[features]
+default = []
+lists = ["dep:lipgloss-list"]
+trees = ["dep:lipgloss-tree"]
+tables = ["dep:lipgloss-table"]
+full = ["lists", "trees", "tables"]
+
+[dependencies]
+lipgloss = { workspace = true }
+
+# Optional crates, enabled by features above
+lipgloss-list  = { workspace = true, optional = true }
+lipgloss-tree  = { workspace = true, optional = true }
+lipgloss-table = { workspace = true, optional = true }
+
+[package.metadata.docs.rs]
+all-features = true
+
+

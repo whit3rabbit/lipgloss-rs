@@ -20,7 +20,7 @@ This is a Rust port of the excellent Go library of the same name, [**lipgloss**]
 - **Memory Safety**: Built-in protection against dimension attacks and malicious input
 
 ```rust
-use lipgloss::{Style, Color, rounded_border, CENTER};
+use lipgloss_extras::lipgloss::{Style, Color, rounded_border, CENTER};
 
 fn main() {
     // Create a solid colored block with automatic padding and borders
@@ -78,14 +78,38 @@ fn main() {
 
 ## Installation
 
-Add `lipgloss` and its component crates to your `Cargo.toml`:
+Start with everything (core + extras) — recommended:
 
 ```toml
 [dependencies]
-lipgloss = "0.0.6"
-lipgloss-list = "0.0.6"
-lipgloss-table = "0.0.6"
-lipgloss-tree = "0.0.6"
+lipgloss-extras = { version = "0.0.7", features = ["full"] }
+```
+
+Lipgloss-extras (Lipgloss + Extras) will always bring core package over.
+
+```rust
+use lipgloss_extras::prelude::*; // brings lipgloss + lists/trees/tables into scope
+
+fn main() {
+    let style = Style::new().foreground(Color::from("201"));
+    #[allow(unused)]
+    let list = List::new().items(vec!["A", "B", "C"]);
+    println!("{}", style.render("installed with extras"));
+}
+```
+
+Pick-and-choose features:
+
+```toml
+[dependencies]
+lipgloss-extras = { version = "0.0.7", features = ["lists", "tables"] }
+```
+
+Prefer core only? You can depend directly on `lipgloss`:
+
+```toml
+[dependencies]
+lipgloss = "0.0.7"
 ```
 
 ## Colors
@@ -97,7 +121,7 @@ lipgloss-tree = "0.0.6"
 `lipgloss-rs` supports ANSI 16 colors (4-bit) and 256 colors (8-bit).
 
 ```rust
-use lipgloss::Color;
+use lipgloss_extras::lipgloss::Color;
 
 // ANSI 16
 let magenta = Color::from("5");
@@ -113,7 +137,7 @@ let hot_pink = Color::from("201");
 `lipgloss-rs` also supports True Color (16,777,216 colors; 24-bit).
 
 ```rust
-use lipgloss::Color;
+use lipgloss_extras::lipgloss::Color;
 
 let blue = Color::from("#0000FF");
 let green = Color::from("#04B575");
@@ -126,7 +150,7 @@ The terminal's color profile will be automatically detected, and colors outside 
 You can also specify color options for light and dark backgrounds. The terminal's background color will be automatically detected and the appropriate color will be chosen at runtime.
 
 ```rust
-use lipgloss::AdaptiveColor;
+use lipgloss_extras::lipgloss::AdaptiveColor;
 
 let color = AdaptiveColor::new("#0000FF", "#000099"); // Light, Dark
 ```
@@ -134,7 +158,7 @@ let color = AdaptiveColor::new("#0000FF", "#000099"); // Light, Dark
 For more precise control, `CompleteColor` allows you to specify exact values for each color profile, and `CompleteAdaptiveColor` combines both concepts.
 
 ```rust
-use lipgloss::{CompleteColor, CompleteAdaptiveColor};
+use lipgloss_extras::lipgloss::{CompleteColor, CompleteAdaptiveColor};
 
 let color = CompleteAdaptiveColor {
     light: CompleteColor {
@@ -159,7 +183,7 @@ let color = CompleteAdaptiveColor {
 ![Linear 1D Gradient](examples/blending/linear-1d/standalone/demo.png)
 
 ```rust
-use lipgloss::{gradient, Style};
+use lipgloss_extras::lipgloss::{gradient, Style};
 
 // Create smooth color gradients
 let colors = gradient("#FF0000", "#0000FF", 10);
@@ -177,7 +201,7 @@ for color in colors {
 ![Linear 2D Gradient](examples/blending/linear-2d/standalone/demo.png)
 
 ```rust
-use lipgloss::bilinear_interpolation_grid;
+use lipgloss_extras::lipgloss::bilinear_interpolation_grid;
 
 // 2D color grids with bilinear interpolation
 let grid = bilinear_interpolation_grid(
@@ -191,7 +215,7 @@ let grid = bilinear_interpolation_grid(
 ![Comprehensive Blending Demo](examples/blending/comprehensive-demo/demo.png)
 
 ```rust
-use lipgloss::{gradient, Style};
+use lipgloss_extras::lipgloss::{gradient, Style};
 
 // Gradient text effects
 let text_colors = gradient("#FF6B6B", "#4ECDC4", 20);
@@ -212,7 +236,7 @@ for (i, ch) in text.chars().enumerate() {
 ![Brightness Demo](examples/blending/brightness/demo.png)
 
 ```rust
-use lipgloss::{Style, Color, lighten};
+use lipgloss_extras::lipgloss::{Style, Color, lighten};
 
 // Brightness adjustments and color mixing
 let base_color = Color::from("#7C3AED");
@@ -228,7 +252,7 @@ let bright_style = Style::new()
 `lipgloss-rs` supports the usual ANSI text formatting options:
 
 ```rust
-use lipgloss::Style;
+use lipgloss_extras::lipgloss::Style;
 
 let style = Style::new()
     .bold(true)
@@ -245,7 +269,7 @@ let style = Style::new()
 `lipgloss-rs` also supports rules for block-level formatting:
 
 ```rust
-use lipgloss::Style;
+use lipgloss_extras::lipgloss::Style;
 
 // Padding
 let style = Style::new()
@@ -291,7 +315,7 @@ let block_style = Style::new().max_width(5).max_height(5);
 Setting a minimum width and height is simple and straightforward.
 
 ```rust
-use lipgloss::{Style, Color};
+use lipgloss_extras::lipgloss::{Style, Color};
 
 let style = Style::new()
     .set_string("What's for lunch?")
@@ -305,7 +329,7 @@ let style = Style::new()
 You can align paragraphs of text to the left, right, or center. Text alignment now works line-by-line for precise visual positioning, exactly like the Go implementation.
 
 ```rust
-use lipgloss::{Style, Color, LEFT, RIGHT, CENTER, TOP, BOTTOM};
+use lipgloss_extras::lipgloss::{Style, Color, LEFT, RIGHT, CENTER, TOP, BOTTOM};
 
 // Horizontal alignment - applied to each wrapped line individually
 let horizontal_demo = Style::new()
@@ -336,7 +360,7 @@ println!("{}", vertical_demo.render("Bottom-right\naligned content"));
 Borders now automatically extend to encompass the full constrained dimensions, including automatic padding.
 
 ```rust
-use lipgloss::{normal_border, rounded_border, thick_border, block_border, Border, Style, Color, CENTER};
+use lipgloss_extras::lipgloss::{normal_border, rounded_border, thick_border, block_border, Border, Style, Color, CENTER};
 
 // Add a purple, rectangular border that auto-extends to width/height
 let style = Style::new()
@@ -359,7 +383,7 @@ let partial_border = Style::new()
 You can also create your own custom borders.
 
 ```rust
-use lipgloss::{Border, Style};
+use lipgloss_extras::lipgloss::{Border, Style};
 
 let my_cute_border = Border::new(
     "._.:*:", "._.:*:", "|*", "|*", "*", "*", "*", "*",
@@ -378,7 +402,7 @@ let custom_style = Style::new()
 Horizontally and vertically joining paragraphs is a cinch.
 
 ```rust
-use lipgloss::{join_horizontal, join_vertical, TOP, CENTER};
+use lipgloss_extras::lipgloss::{join_horizontal, join_vertical, TOP, CENTER};
 
 let paragraph_a = "First";
 let paragraph_b = "Second\nLine";
@@ -396,7 +420,7 @@ let joined_v = join_vertical(CENTER, &[paragraph_a, paragraph_b]);
 Sometimes you’ll simply want to place a block of text in whitespace.
 
 ```rust
-use lipgloss::{place, place_horizontal, place_vertical, CENTER, BOTTOM, RIGHT};
+use lipgloss_extras::lipgloss::{place, place_horizontal, place_vertical, CENTER, BOTTOM, RIGHT};
 
 let fancy_styled_paragraph = "I'm fancy.";
 
@@ -415,7 +439,7 @@ let block = place(30, 80, RIGHT, BOTTOM, fancy_styled_paragraph, &[]);
 The tab character (`\t`) is rendered differently in different terminals (often as 8 spaces, sometimes 4). Because of this inconsistency, `lipgloss-rs` converts tabs to 4 spaces at render time. This behavior can be changed on a per-style basis:
 
 ```rust
-use lipgloss::{Style, NO_TAB_CONVERSION};
+use lipgloss_extras::lipgloss::{Style, NO_TAB_CONVERSION};
 
 let style = Style::new(); // tabs will render as 4 spaces, the default
 let style_2 = style.clone().tab_width(2);    // render tabs as 2 spaces
@@ -430,7 +454,7 @@ let style_neg_1 = style.clone().tab_width(NO_TAB_CONVERSION); // leave tabs inta
 The builder pattern for `Style` returns a new, modified copy with each call. For an explicit copy, just use `.clone()`:
 
 ```rust
-use lipgloss::{Style, Color};
+use lipgloss_extras::lipgloss::{Style, Color};
 
 let style = Style::new().foreground(Color::from("219"));
 
@@ -444,7 +468,7 @@ let wild_style = style.blink(true); // this is also a new copy, with blink added
 Styles can inherit rules from other styles. When inheriting, only unset rules on the receiver are inherited.
 
 ```rust
-use lipgloss::{Style, Color};
+use lipgloss_extras::lipgloss::{Style, Color};
 
 let style_a = Style::new()
     .foreground(Color::from("229"))
@@ -462,7 +486,7 @@ let style_b = Style::new()
 All rules can be unset:
 
 ```rust
-use lipgloss::{Style, Color};
+use lipgloss_extras::lipgloss::{Style, Color};
 
 let style = Style::new()
     .bold(true)         // make it bold
@@ -482,8 +506,8 @@ Custom renderers allow you to render to a specific outputs. This is particularly
 `lipgloss-rs` ships with a table rendering component, `lipgloss-table`.
 
 ```rust
-use lipgloss::{style::Style, thick_border, Color, CENTER};
-use lipgloss_table::{Table, HEADER_ROW};
+use lipgloss_extras::lipgloss::{style::Style, thick_border, Color, CENTER};
+use lipgloss_extras::table::{Table, HEADER_ROW};
 
 let data: Vec<Vec<&str>> = vec![
     vec!["Chinese", "您好", "你好"],
@@ -527,7 +551,7 @@ This can produce complex tables with proper Unicode support and CJK character ha
 `lipgloss-rs` ships with a list rendering component, `lipgloss-list`.
 
 ```rust
-use lipgloss_list::{roman, List};
+use lipgloss_extras::list::{roman, List};
 
 let l = List::new()
     .item("A")
@@ -555,7 +579,7 @@ Which produces:
 `lipgloss-rs` ships with a tree rendering component, `lipgloss-tree`.
 
 ```rust
-use lipgloss_tree::{Leaf, Node, Tree};
+use lipgloss_extras::tree::{Leaf, Node, Tree};
 
 let t = Tree::new().root(".")
     .child(vec![
@@ -585,7 +609,7 @@ Which produces:
 The Rust implementation includes built-in safety features and performance optimizations beyond the original Go version:
 
 ```rust
-use lipgloss::{Style, Color};
+use lipgloss_extras::lipgloss::{Style, Color};
 
 // Automatic dimension validation prevents memory exhaustion attacks
 let safe_style = Style::new()
@@ -615,6 +639,15 @@ cargo run --package table-demo-languages
 
 # Simple tree rendering demo
 cargo run --package tree-demo-simple
+```
+
+### Facade crate (batteries included)
+
+Prefer a single dependency that re-exports everything? Use `lipgloss-extras`:
+
+```toml
+[dependencies]
+lipgloss-extras = { version = "0.0.7", features = ["full"] }
 ```
 
 ## Bubbletea Integration

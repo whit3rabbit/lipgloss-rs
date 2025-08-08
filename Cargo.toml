@@ -6,6 +6,7 @@ members = [
     "lipgloss-list",
     "lipgloss-table",
     "lipgloss-tree",
+    "lipgloss-extras",
     "examples/layout-demo",
     "examples/list-demo/simple",
     "examples/list-demo/grocery",
@@ -36,7 +37,7 @@ resolver = "2"
 # Shared metadata for all crates in the workspace.
 # Individual crates will inherit these settings.
 [workspace.package]
-version = "0.0.6"
+version = "0.0.7"
 authors = ["whit3rabbit <whiterabbit@protonmail.com>"]
 edition = "2021"
 license = "MIT"
@@ -60,13 +61,13 @@ crossterm = "0.29"
 unicode-width = "0.2.1"
 
 # The core lipgloss crate, which all other components will depend on.
-lipgloss = { path = "./lipgloss", version = "0.0.6" }
-lipgloss-list = { path = "./lipgloss-list", version = "0.0.6" }
-lipgloss-table = { path = "./lipgloss-table", version = "0.0.6" }
-lipgloss-tree = { path = "./lipgloss-tree", version = "0.0.6" }
+lipgloss = { path = "./lipgloss", version = "0.0.7" }
+lipgloss-list = { path = "./lipgloss-list", version = "0.0.7" }
+lipgloss-table = { path = "./lipgloss-table", version = "0.0.7" }
+lipgloss-tree = { path = "./lipgloss-tree", version = "0.0.7" }
+
 
 # --- Dev Dependencies (for examples and tests) ---
-# Your bubbletea-rs crate, for demonstrating integration.
 bubbletea-rs = { version = "0.0.6" }
 
 # The async runtime needed to run bubbletea-rs examples.
