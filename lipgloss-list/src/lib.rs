@@ -33,15 +33,15 @@ pub type Items = Box<dyn Children>;
 /// Example:
 ///
 /// ```rust
-/// use lipgloss::{Color, Style};
+/// use lipgloss::{color::{LIST_ITEM_PRIMARY, LIST_ITEM_SECONDARY, STATUS_SUCCESS}, Style};
 /// use lipgloss_list::List;
 /// use lipgloss_tree::Children;
 ///
 /// let style_func = |items: &dyn Children, i: usize| {
 ///     match i {
-///         0 => Style::new().foreground(Color::from("#ff0000")),
-///         1 => Style::new().foreground(Color::from("#00ff00")),
-///         2 => Style::new().foreground(Color::from("#0000ff")),
+///         0 => Style::new().foreground(LIST_ITEM_PRIMARY),
+///         1 => Style::new().foreground(STATUS_SUCCESS),
+///         2 => Style::new().foreground(LIST_ITEM_SECONDARY),
 ///         _ => Style::new(),
 ///     }
 /// };
@@ -139,13 +139,13 @@ impl List {
     /// Example:
     ///
     /// ```rust
-    /// use lipgloss::{Color, Style};
+    /// use lipgloss::{color::LIST_ENUMERATOR, Style};
     /// use lipgloss_list::List;
     ///
     /// let l = List::new()
     ///     .enumerator_style_func(|_items, i| {
     ///         if i % 2 == 0 {
-    ///             Style::new().foreground(Color::from("#ff69b4"))
+    ///             Style::new().foreground(LIST_ENUMERATOR)
     ///         } else {
     ///             Style::new()
     ///         }
@@ -198,13 +198,13 @@ impl List {
     /// Example:
     ///
     /// ```rust
-    /// use lipgloss::{Color, Style};
+    /// use lipgloss::{color::LIST_ITEM_PRIMARY, Style};
     /// use lipgloss_list::List;
     ///
     /// let l = List::new()
     ///     .item_style_func(|_items, i| {
     ///         if i == 0 {
-    ///             Style::new().foreground(Color::from("#ff69b4"))
+    ///             Style::new().foreground(LIST_ITEM_PRIMARY)
     ///         } else {
     ///             Style::new()
     ///         }

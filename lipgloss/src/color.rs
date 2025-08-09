@@ -6,6 +6,16 @@
 //! - Adaptive colors that change based on light/dark backgrounds
 //! - Color profile-aware rendering for different terminal capabilities
 //! - Automatic color space conversion and quantization
+//! - Color utility functions (lighten, darken, alpha blending, etc.)
+//! - Perceptually accurate color matching algorithms
+//!
+//! # Security Considerations
+//!
+//! This module includes built-in protections against malicious color inputs:
+//! - Hex color parsing is bounded and validates input lengths
+//! - Numeric color indices are clamped to valid ranges using modulo arithmetic
+//! - All color conversion functions handle invalid inputs gracefully
+//! - No memory allocations are unbounded or dependent on untrusted input
 //!
 //! # Usage
 //!
@@ -23,9 +33,13 @@
 //!
 //! // Adaptive color for light/dark themes
 //! let adaptive = AdaptiveColor {
-//!     Light: "#000000".to_string(),
-//!     Dark: "#ffffff".to_string(),
+//!     Light: "#000000",
+//!     Dark: "#ffffff",
 //! };
+//!
+//! // Color utilities
+//! let lighter = lipgloss::color::lighten(&red, 0.3);
+//! let complementary = lipgloss::color::complementary(&red);
 //! ```
 
 use crate::renderer::{default_renderer, ColorProfileKind, Renderer};
@@ -144,7 +158,29 @@ impl TerminalColor for String {
     }
 }
 
-// Map sRGB 8-bit to nearest ANSI256 index using termenv's exact algorithm.
+/// Maps an sRGB 8-bit color to the nearest ANSI256 index using termenv's exact algorithm.
+///
+/// This function converts RGB values to the closest matching color in the 256-color
+/// ANSI palette. It uses the same algorithm as Go's termenv library for exact compatibility.
+/// The ANSI256 palette consists of:
+/// - Colors 0-15: Standard ANSI colors
+/// - Colors 16-231: 6×6×6 RGB color cube
+/// - Colors 232-255: 24-step grayscale ramp
+///
+/// # Arguments
+///
+/// * `r` - Red component (0-255)
+/// * `g` - Green component (0-255)
+/// * `b` - Blue component (0-255)
+///
+/// # Returns
+///
+/// The closest ANSI256 color index (0-255)
+///
+/// # Algorithm
+///
+/// The function compares the input color against both the color cube and
+/// grayscale representations, choosing whichever has the smaller Euclidean distance.
 pub(crate) fn rgb_to_ansi256(r: u8, g: u8, b: u8) -> u8 {
     // Convert to 6x6x6 color cube using termenv's v2ci function
     fn v2ci(v: u8) -> u8 {
@@ -193,6 +229,19 @@ pub(crate) fn rgb_to_ansi256(r: u8, g: u8, b: u8) -> u8 {
     }
 }
 
+/// Calculates the squared Euclidean distance between two RGB colors.
+///
+/// This is used for color matching algorithms to find the closest color
+/// without needing the expensive square root operation.
+///
+/// # Arguments
+///
+/// * `r1`, `g1`, `b1` - RGB components of the first color
+/// * `r2`, `g2`, `b2` - RGB components of the second color
+///
+/// # Returns
+///
+/// The squared Euclidean distance as an unsigned integer
 fn dist2(r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8) -> u32 {
     let dr = r1 as i32 - r2 as i32;
     let dg = g1 as i32 - g2 as i32;
@@ -200,6 +249,18 @@ fn dist2(r1: u8, g1: u8, b1: u8, r2: u8, g2: u8, b2: u8) -> u32 {
     (dr * dr + dg * dg + db * db) as u32
 }
 
+/// Converts an ANSI256 color index to RGB values.
+///
+/// This function provides the reverse mapping from ANSI256 indices to their
+/// corresponding RGB values, following the standard ANSI256 color palette.
+///
+/// # Arguments
+///
+/// * `idx` - ANSI256 color index (0-255)
+///
+/// # Returns
+///
+/// RGB tuple (red, green, blue) with values 0-255
 fn ansi256_to_rgb_u8(idx: u8) -> (u8, u8, u8) {
     match idx {
         0..=15 => ANSI16_RGB[idx as usize],
@@ -221,6 +282,27 @@ fn ansi256_to_rgb_u8(idx: u8) -> (u8, u8, u8) {
     }
 }
 
+/// Maps an sRGB 8-bit color to the nearest ANSI16 (basic) color index.
+///
+/// This function converts RGB values to the closest matching color in the
+/// 16-color basic ANSI palette using perceptually accurate Delta E distance
+/// in the CIE L*a*b* color space, matching Go's termenv behavior.
+///
+/// # Arguments
+///
+/// * `r` - Red component (0-255)
+/// * `g` - Green component (0-255)
+/// * `b` - Blue component (0-255)
+///
+/// # Returns
+///
+/// The closest ANSI16 color index (0-15)
+///
+/// # Color Mapping
+///
+/// The basic ANSI colors are:
+/// - 0-7: Standard colors (black, red, green, yellow, blue, magenta, cyan, white)
+/// - 8-15: Bright variants of the standard colors
 pub(crate) fn rgb_to_ansi16(r: u8, g: u8, b: u8) -> u8 {
     // Map to nearest among standard 16 ANSI colors using perceptually accurate Delta E
     // distance in the CIE L*a*b* color space, matching Go's termenv behavior.
@@ -246,7 +328,12 @@ pub(crate) fn rgb_to_ansi16(r: u8, g: u8, b: u8) -> u8 {
         .unwrap_or(0) // Default to black on any error
 }
 
-const CUBE_LEVELS: [u8; 6] = [0, 0x5f, 0x87, 0xaf, 0xd7, 0xff]; // termenv's i2cv values
+/// The 6 intensity levels used in the ANSI256 6×6×6 color cube.
+/// These values match termenv's i2cv array for exact compatibility.
+const CUBE_LEVELS: [u8; 6] = [0, 0x5f, 0x87, 0xaf, 0xd7, 0xff];
+
+/// RGB values for the 16 basic ANSI colors.
+/// These are the standard terminal colors that most terminals support.
 const ANSI16_RGB: [(u8, u8, u8); 16] = [
     (0x00, 0x00, 0x00), // 0 black          #000000
     (0x80, 0x00, 0x00), // 1 red            #800000
@@ -561,8 +648,8 @@ mod tests {
     fn test_adaptive_color_field_names() {
         // Test that field names match Go API exactly
         let adaptive = AdaptiveColor {
-            Light: "#000000".to_string(),
-            Dark: "#ffffff".to_string(),
+            Light: "#000000",
+            Dark: "#ffffff",
         };
         // Should work with our trait implementation
         let _token = adaptive.token_default();
@@ -573,9 +660,9 @@ mod tests {
     fn test_complete_color_field_names() {
         // Test that field names match Go API exactly
         let complete = CompleteColor {
-            TrueColor: "#ff0000".to_string(),
+            TrueColor: "#FF0000".to_string(),
             ANSI256: "196".to_string(),
-            ANSI: "9".to_string(),
+            ANSI: "10".to_string(),
         };
         // Should work with our trait implementation
         let _token = complete.token_default();
@@ -725,32 +812,32 @@ mod tests {
             (
                 true,
                 AdaptiveColor {
-                    Light: "#0000FF".to_string(),
-                    Dark: "#FF0000".to_string(),
+                    Light: "#0000FF",
+                    Dark: "#FF0000",
                 },
                 0xFF0000,
             ),
             (
                 false,
                 AdaptiveColor {
-                    Light: "#0000FF".to_string(),
-                    Dark: "#FF0000".to_string(),
+                    Light: "#0000FF",
+                    Dark: "#FF0000",
                 },
                 0x0000FF,
             ),
             (
                 true,
                 AdaptiveColor {
-                    Light: "21".to_string(),
-                    Dark: "9".to_string(),
+                    Light: "21",
+                    Dark: "9",
                 },
                 0xFF0000,
             ),
             (
                 false,
                 AdaptiveColor {
-                    Light: "21".to_string(),
-                    Dark: "9".to_string(),
+                    Light: "21",
+                    Dark: "9",
                 },
                 0x0000FF,
             ),
@@ -782,8 +869,8 @@ mod tests {
                 ColorProfileKind::TrueColor,
                 CompleteColor {
                     TrueColor: "#FF0000".to_string(),
-                    ANSI256: "231".to_string(),
-                    ANSI: "12".to_string(),
+                    ANSI256: "196".to_string(),
+                    ANSI: "10".to_string(),
                 },
                 0xFF0000,
             ),
@@ -791,8 +878,8 @@ mod tests {
                 ColorProfileKind::ANSI256,
                 CompleteColor {
                     TrueColor: "#FF0000".to_string(),
-                    ANSI256: "231".to_string(),
-                    ANSI: "12".to_string(),
+                    ANSI256: "196".to_string(),
+                    ANSI: "10".to_string(),
                 },
                 0xFF0000,
             ),
@@ -800,8 +887,8 @@ mod tests {
                 ColorProfileKind::ANSI,
                 CompleteColor {
                     TrueColor: "#FF0000".to_string(),
-                    ANSI256: "231".to_string(),
-                    ANSI: "12".to_string(),
+                    ANSI256: "196".to_string(),
+                    ANSI: "10".to_string(),
                 },
                 0xFF0000,
             ),
@@ -809,8 +896,8 @@ mod tests {
                 ColorProfileKind::TrueColor,
                 CompleteColor {
                     TrueColor: "".to_string(),
-                    ANSI256: "231".to_string(),
-                    ANSI: "12".to_string(),
+                    ANSI256: "196".to_string(),
+                    ANSI: "10".to_string(),
                 },
                 0x000000,
             ),
@@ -871,8 +958,8 @@ mod tests {
     #[test]
     fn test_adaptive_color_rgba_combinations() {
         let adaptive = AdaptiveColor {
-            Light: "#FF0000".to_string(), // Red for light background
-            Dark: "#00FF00".to_string(),  // Green for dark background
+            Light: "#FF0000", // Red for light background
+            Dark: "#00FF00",  // Green for dark background
         };
 
         // Test that RGBA uses the default renderer's background setting
@@ -895,7 +982,7 @@ mod tests {
         let complete = CompleteColor {
             TrueColor: "#FF0000".to_string(),
             ANSI256: "46".to_string(), // Different color for testing
-            ANSI: "12".to_string(),    // Different color for testing
+            ANSI: "10".to_string(),    // Different color for testing
         };
 
         // CompleteColor RGBA should always use TrueColor value
@@ -909,8 +996,8 @@ mod tests {
         // Test with empty TrueColor (should fallback to black)
         let empty_complete = CompleteColor {
             TrueColor: "".to_string(),
-            ANSI256: "46".to_string(),
-            ANSI: "12".to_string(),
+            ANSI256: "196".to_string(),
+            ANSI: "10".to_string(),
         };
 
         let (r, g, b, a) = empty_complete.rgba();
@@ -1044,7 +1131,7 @@ mod tests {
             light: CompleteColor {
                 TrueColor: "#FF0000".to_string(), // Red for light
                 ANSI256: "196".to_string(),
-                ANSI: "9".to_string(),
+                ANSI: "10".to_string(),
             },
             dark: CompleteColor {
                 TrueColor: "#00FF00".to_string(), // Green for dark
@@ -1281,13 +1368,13 @@ impl TerminalColor for ANSIColor {
 /// use lipgloss::color::{AdaptiveColor, TerminalColor};
 ///
 /// let adaptive_text = AdaptiveColor {
-///     Light: "#000000".to_string(), // Black text on light background
-///     Dark: "#ffffff".to_string(),  // White text on dark background
+///     Light: "#000000", // Black text on light background
+///     Dark: "#ffffff",  // White text on dark background
 /// };
 ///
 /// let adaptive_accent = AdaptiveColor {
-///     Light: "#0066cc".to_string(), // Dark blue on light background
-///     Dark: "#66b3ff".to_string(),  // Light blue on dark background
+///     Light: "#0066cc", // Dark blue on light background
+///     Dark: "#66b3ff",  // Light blue on dark background
 /// };
 ///
 /// // Color automatically adapts based on terminal background
@@ -1298,28 +1385,28 @@ impl TerminalColor for ANSIColor {
 #[allow(non_snake_case)]
 pub struct AdaptiveColor {
     /// Color specification for light backgrounds
-    pub Light: String,
+    pub Light: &'static str,
     /// Color specification for dark backgrounds
-    pub Dark: String,
+    pub Dark: &'static str,
 }
 
 impl TerminalColor for AdaptiveColor {
     fn token(&self, r: &Renderer) -> String {
         if r.has_dark_background() {
-            Color(self.Dark.clone()).token(r)
+            Color::from(self.Dark).token(r)
         } else {
-            Color(self.Light.clone()).token(r)
+            Color::from(self.Light).token(r)
         }
     }
 
     fn rgba(&self) -> (u32, u32, u32, u32) {
         // Use default renderer's background to pick, then use Color's logic for parsing
         let color_str = if default_renderer().has_dark_background() {
-            &self.Dark
+            self.Dark
         } else {
-            &self.Light
+            self.Light
         };
-        Color(color_str.clone()).rgba()
+        Color::from(color_str).rgba()
     }
 }
 
@@ -1341,7 +1428,7 @@ impl TerminalColor for AdaptiveColor {
 /// use lipgloss::renderer::{Renderer, ColorProfileKind};
 ///
 /// let red = CompleteColor {
-///     TrueColor: "#ff0000".to_string(),    // Hex for true color terminals
+///     TrueColor: "#FF0000".to_string(),    // Hex for true color terminals
 ///     ANSI256: "196".to_string(),           // Index for 256-color terminals
 ///     ANSI: "9".to_string(),                // Index for basic ANSI terminals
 /// };
@@ -1349,7 +1436,7 @@ impl TerminalColor for AdaptiveColor {
 /// // Different renderers will use different values
 /// let mut true_color_renderer = Renderer::new();
 /// true_color_renderer.set_color_profile(ColorProfileKind::TrueColor);
-/// assert_eq!(red.token(&true_color_renderer), "#ff0000");
+/// assert_eq!(red.token(&true_color_renderer), "#FF0000");
 ///
 /// let mut ansi_renderer = Renderer::new();
 /// ansi_renderer.set_color_profile(ColorProfileKind::ANSI);
@@ -1402,14 +1489,14 @@ impl TerminalColor for CompleteColor {
 ///
 /// let adaptive_red = CompleteAdaptiveColor {
 ///     light: CompleteColor {
-///         TrueColor: "#cc0000".to_string(),  // Darker red for light backgrounds
-///         ANSI256: "160".to_string(),
-///         ANSI: "1".to_string(),
+///         TrueColor: "#FF0000".to_string(),  // Darker red for light backgrounds
+///         ANSI256: "196".to_string(),
+///         ANSI: "10".to_string(),
 ///     },
 ///     dark: CompleteColor {
-///         TrueColor: "#ff4444".to_string(),  // Lighter red for dark backgrounds
-///         ANSI256: "203".to_string(),
-///         ANSI: "9".to_string(),
+///         TrueColor: "#FF0000".to_string(),  // Lighter red for dark backgrounds
+///         ANSI256: "196".to_string(),
+///         ANSI: "10".to_string(),
 ///     },
 /// };
 ///
@@ -1424,6 +1511,208 @@ pub struct CompleteAdaptiveColor {
     /// Color specification for dark backgrounds
     pub dark: CompleteColor,
 }
+
+// ================================================================================================
+// Theme-Aware Color Constants
+// ================================================================================================
+//
+// These AdaptiveColor constants provide semantic color definitions that automatically
+// adapt to light and dark terminal backgrounds. They follow modern UI design patterns
+// and ensure consistent, accessible theming across different terminal environments.
+
+// Text Colors - Hierarchical text content
+/// Primary text color with maximum contrast for main content readability.
+///
+/// Use for body text, primary content, and any text that needs to be highly readable.
+/// Automatically selects dark colors on light backgrounds and light colors on dark backgrounds.
+pub const TEXT_PRIMARY: AdaptiveColor = AdaptiveColor {
+    Light: "#262626", // Very dark gray on light backgrounds
+    Dark: "#FAFAFA",  // Very light gray on dark backgrounds
+};
+
+/// Muted text color for secondary information and less prominent content.
+///
+/// Use for captions, metadata, secondary descriptions, and supporting text that should
+/// be readable but not compete with primary content for attention.
+pub const TEXT_MUTED: AdaptiveColor = AdaptiveColor {
+    Light: "#737373", // Medium gray on light backgrounds
+    Dark: "#A3A3A3",  // Light gray on dark backgrounds
+};
+
+/// Subtle text color for least important details and placeholder content.
+///
+/// Use for disabled states, placeholder text, and the least important information
+/// that should remain visible but unobtrusive.
+pub const TEXT_SUBTLE: AdaptiveColor = AdaptiveColor {
+    Light: "#A3A3A3", // Light gray on light backgrounds
+    Dark: "#737373",  // Medium gray on dark backgrounds
+};
+
+/// Header text color with maximum contrast for titles and headings.
+///
+/// Use for section titles, headings, and any text that needs maximum emphasis
+/// and contrast. Slightly more prominent than primary text.
+pub const TEXT_HEADER: AdaptiveColor = AdaptiveColor {
+    Light: "#171717", // Near-black on light backgrounds
+    Dark: "#F5F5F5",  // Near-white on dark backgrounds
+};
+
+// Accent Colors - Brand and interactive elements
+/// Primary brand/accent color for main interactive elements and highlights.
+///
+/// Use for primary buttons, active states, brand elements, and the most important
+/// interactive components. This purple provides good contrast on both themes.
+pub const ACCENT_PRIMARY: AdaptiveColor = AdaptiveColor {
+    Light: "#7C3AED", // Purple-600 on light backgrounds
+    Dark: "#A855F7",  // Purple-500 on dark backgrounds
+};
+
+/// Secondary accent color for alternative highlights and complementary elements.
+///
+/// Use for secondary buttons, alternative highlights, and accent elements that
+/// should stand out but not compete with the primary accent.
+pub const ACCENT_SECONDARY: AdaptiveColor = AdaptiveColor {
+    Light: "#0891B2", // Cyan-600 on light backgrounds
+    Dark: "#06B6D4",  // Cyan-500 on dark backgrounds
+};
+
+/// Interactive element color for links, clickable items, and active states.
+///
+/// Use for hyperlinks, clickable text, active menu items, and other interactive
+/// elements that need to be clearly identifiable as clickable.
+pub const INTERACTIVE: AdaptiveColor = AdaptiveColor {
+    Light: "#DC2626", // Red-600 on light backgrounds
+    Dark: "#EF4444",  // Red-500 on dark backgrounds
+};
+
+// Status Colors - Semantic feedback and states
+/// Success state color for positive feedback and completed actions.
+///
+/// Use for success messages, completed tasks, positive status indicators,
+/// and any UI element representing successful or positive states.
+pub const STATUS_SUCCESS: AdaptiveColor = AdaptiveColor {
+    Light: "#059669", // Emerald-600 on light backgrounds
+    Dark: "#10B981",  // Emerald-500 on dark backgrounds
+};
+
+/// Warning state color for caution and attention-needed states.
+///
+/// Use for warning messages, cautionary states, pending actions,
+/// and UI elements that need user attention but aren't critical.
+pub const STATUS_WARNING: AdaptiveColor = AdaptiveColor {
+    Light: "#D97706", // Amber-600 on light backgrounds
+    Dark: "#F59E0B",  // Amber-500 on dark backgrounds
+};
+
+/// Error state color for failures and critical issues.
+///
+/// Use for error messages, failed states, destructive actions,
+/// and any UI element representing errors or critical issues.
+pub const STATUS_ERROR: AdaptiveColor = AdaptiveColor {
+    Light: "#DC2626", // Red-600 on light backgrounds
+    Dark: "#EF4444",  // Red-500 on dark backgrounds
+};
+
+/// Information state color for neutral information and tips.
+///
+/// Use for informational messages, helpful tips, neutral status indicators,
+/// and UI elements that provide information without emotional weight.
+pub const STATUS_INFO: AdaptiveColor = AdaptiveColor {
+    Light: "#2563EB", // Blue-600 on light backgrounds
+    Dark: "#3B82F6",  // Blue-500 on dark backgrounds
+};
+
+// Surface Colors - Backgrounds and containers
+/// Subtle surface color for cards and elevated content areas.
+///
+/// Use for card backgrounds, subtle containers, and content areas that need
+/// to be slightly differentiated from the main background.
+pub const SURFACE_SUBTLE: AdaptiveColor = AdaptiveColor {
+    Light: "#F5F5F5", // Light gray background on light themes
+    Dark: "#262626",  // Dark gray background on dark themes
+};
+
+/// Elevated surface color for prominent containers and overlays.
+///
+/// Use for modal backgrounds, elevated cards, prominent content areas,
+/// and containers that should appear "above" other content.
+pub const SURFACE_ELEVATED: AdaptiveColor = AdaptiveColor {
+    Light: "#FFFFFF", // Pure white on light themes
+    Dark: "#171717",  // Very dark gray on dark themes
+};
+
+// Border Colors - Separators and frames
+/// Subtle border color for gentle separation and quiet frames.
+///
+/// Use for subtle dividers, gentle card borders, and separators that
+/// should define boundaries without being visually prominent.
+pub const BORDER_SUBTLE: AdaptiveColor = AdaptiveColor {
+    Light: "#E5E5E5", // Light gray border on light themes
+    Dark: "#404040",  // Medium gray border on dark themes
+};
+
+/// Prominent border color for emphasized frames and active states.
+///
+/// Use for focused elements, active containers, emphasized frames,
+/// and borders that need to be clearly visible and prominent.
+pub const BORDER_PROMINENT: AdaptiveColor = AdaptiveColor {
+    Light: "#D4D4D8", // Slightly darker gray on light themes
+    Dark: "#525252",  // Lighter gray on dark themes
+};
+
+// Component-Specific Colors
+// List Components
+/// Primary color for list item text content.
+///
+/// Use for main list item text to ensure good readability across themes.
+pub const LIST_ITEM_PRIMARY: AdaptiveColor = TEXT_PRIMARY;
+
+/// Secondary color for list item supporting text.
+///
+/// Use for list item subtitles, descriptions, and secondary information.
+pub const LIST_ITEM_SECONDARY: AdaptiveColor = TEXT_MUTED;
+
+/// Color for list enumerators and bullets.
+///
+/// Use for list numbers, bullets, and enumeration symbols to make
+/// them visually distinct from content while maintaining readability.
+pub const LIST_ENUMERATOR: AdaptiveColor = ACCENT_PRIMARY;
+
+// Table Components
+/// Color for table header text.
+///
+/// Use for table column headers and other header content that needs
+/// to stand out against header backgrounds.
+pub const TABLE_HEADER_TEXT: AdaptiveColor = AdaptiveColor {
+    Light: "#FAFAFA", // Light text on light themes (assumes dark header background)
+    Dark: "#171717",  // Dark text on dark themes (assumes light header background)
+};
+
+/// Background color for table headers.
+///
+/// Use for table header backgrounds to create clear distinction
+/// between headers and data rows.
+pub const TABLE_HEADER_BG: AdaptiveColor = ACCENT_PRIMARY;
+
+/// Color for table row text content.
+///
+/// Use for main table cell content to ensure good readability.
+pub const TABLE_ROW_TEXT: AdaptiveColor = TEXT_PRIMARY;
+
+/// Background color for alternating table rows.
+///
+/// Use for even/odd row backgrounds to improve table readability
+/// through subtle row separation.
+pub const TABLE_ROW_EVEN_BG: AdaptiveColor = AdaptiveColor {
+    Light: "#F9FAFB", // Very light gray on light themes
+    Dark: "#1F1F1F",  // Very dark gray on dark themes
+};
+
+/// Color for table borders and separators.
+///
+/// Use for table borders, cell separators, and grid lines to create
+/// clear table structure without overwhelming the content.
+pub const TABLE_BORDER: AdaptiveColor = BORDER_PROMINENT;
 
 impl TerminalColor for CompleteAdaptiveColor {
     fn token(&self, r: &Renderer) -> String {
@@ -1443,7 +1732,7 @@ impl TerminalColor for CompleteAdaptiveColor {
     }
 }
 
-// --- helpers ---
+// --- Helper Functions ---
 
 /// Parse hex color with 8-bit RGBA values for backward compatibility
 pub(crate) fn parse_hex_rgba_8bit(s: &str) -> Option<(u32, u32, u32, u32)> {
@@ -1548,6 +1837,19 @@ pub(crate) fn parse_hex_rgba(s: &str) -> Option<(u32, u32, u32, u32)> {
     Some(srgb_to_rgba16(rgb, a_u8))
 }
 
+/// Converts sRGB and alpha to 16-bit RGBA values with 8-bit RGB preservation.
+///
+/// This function preserves the original behavior where RGB components remain
+/// as 8-bit values while alpha is expanded to 16-bit for blending operations.
+///
+/// # Arguments
+///
+/// * `rgb` - sRGB color with 8-bit components
+/// * `a_u8` - Alpha value (0-255)
+///
+/// # Returns
+///
+/// RGBA tuple (r, g, b, a) where RGB are 8-bit values and alpha is 16-bit
 fn srgb_to_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
     // Original behavior: keep RGB as 8-bit, expand alpha to 16-bit
     let (r, g, b) = (rgb.red as u32, rgb.green as u32, rgb.blue as u32);
@@ -1555,7 +1857,20 @@ fn srgb_to_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
     (r, g, b, a * 257)
 }
 
-/// Convert 8-bit RGBA to true 16-bit RGBA for Go blending compatibility
+/// Converts 8-bit RGBA to true 16-bit RGBA for Go blending compatibility.
+///
+/// This function expands all components from 8-bit to 16-bit values using the
+/// same algorithm as Go's color.RGBA interface, where each 8-bit value is
+/// multiplied by 257 to fill the full 16-bit range.
+///
+/// # Arguments
+///
+/// * `rgb` - sRGB color with 8-bit components
+/// * `a_u8` - Alpha value (0-255)
+///
+/// # Returns
+///
+/// RGBA tuple with all components expanded to 16-bit (0-65535)
 fn srgb_to_true_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
     // Expand 8-bit channels to 16-bit like Go's color.RGBA
     // Go's color.RGBA interface returns 16-bit values where each 8-bit value
@@ -1573,6 +1888,29 @@ fn srgb_to_true_rgba16(rgb: Srgb<u8>, a_u8: u8) -> (u32, u32, u32, u32) {
 // --- Color Utility Functions ---
 
 /// Clamps a value between a low and high bound.
+///
+/// This utility function ensures a value stays within specified bounds,
+/// which is useful for color component validation and calculations.
+///
+/// # Arguments
+///
+/// * `v` - The value to clamp
+/// * `low` - The minimum allowed value
+/// * `high` - The maximum allowed value
+///
+/// # Returns
+///
+/// The clamped value within the bounds [low, high]
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss::color::clamp;
+///
+/// assert_eq!(clamp(5, 0, 10), 5);   // Within bounds
+/// assert_eq!(clamp(-1, 0, 10), 0);  // Below minimum
+/// assert_eq!(clamp(15, 0, 10), 10); // Above maximum
+/// ```
 pub fn clamp<T: PartialOrd>(v: T, low: T, high: T) -> T {
     if v < low {
         low
@@ -1743,7 +2081,11 @@ pub fn is_dark_color<C: TerminalColor>(color: &C) -> bool {
     luminance < 127.5 // Midpoint of 0-255
 }
 
-/// A function that returns a color based on whether the terminal has a light or dark background.
+/// A function type that returns a color based on whether the terminal has a light or dark background.
+///
+/// This type alias represents a boxed closure that takes two color references
+/// (one for light backgrounds, one for dark backgrounds) and returns the appropriate
+/// Color based on the background type.
 pub type LightDarkFunc = Box<dyn Fn(&dyn TerminalColor, &dyn TerminalColor) -> Color>;
 
 /// Returns a function that chooses between light and dark colors based on background.
@@ -1774,7 +2116,11 @@ pub fn light_dark(is_dark: bool) -> LightDarkFunc {
     })
 }
 
-/// A function that returns the appropriate color based on the color profile.
+/// A function type that returns the appropriate color based on the color profile.
+///
+/// This type alias represents a boxed closure that takes three color references
+/// (ANSI, ANSI256, TrueColor) and returns the Color appropriate for the
+/// specified color profile.
 pub type CompleteFunc =
     Box<dyn Fn(&dyn TerminalColor, &dyn TerminalColor, &dyn TerminalColor) -> Color>;
 

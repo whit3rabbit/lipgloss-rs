@@ -129,8 +129,8 @@ fn main() {
             with_whitespace_chars("/"),
             // Use AdaptiveColor for whitespace like the Go example (Light: 250, Dark: 236)
             with_whitespace_foreground(AdaptiveColor {
-                Light: "250".into(),
-                Dark: "236".into(),
+                Light: "250",
+                Dark: "236",
             }),
         ],
     );

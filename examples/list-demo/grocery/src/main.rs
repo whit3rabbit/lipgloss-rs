@@ -1,4 +1,7 @@
-use lipgloss::{Color, Style};
+use lipgloss::{
+    color::{STATUS_SUCCESS, TEXT_MUTED, TEXT_PRIMARY},
+    Style,
+};
 use lipgloss_list::List;
 use lipgloss_tree::Children;
 
@@ -27,11 +30,9 @@ fn grocery_enumerator(items: &dyn Children, i: usize) -> String {
 }
 
 fn enum_style_func(items: &dyn Children, i: usize) -> Style {
-    let dim_enum_style = Style::new().foreground(Color::from("240")).margin_right(1);
+    let dim_enum_style = Style::new().foreground(TEXT_MUTED).margin_right(1);
 
-    let highlighted_enum_style = Style::new()
-        .foreground(Color::from("#00d787"))
-        .margin_right(1);
+    let highlighted_enum_style = Style::new().foreground(STATUS_SUCCESS).margin_right(1);
 
     if let Some(item) = items.at(i) {
         let value = item.value();
@@ -45,7 +46,7 @@ fn enum_style_func(items: &dyn Children, i: usize) -> Style {
 }
 
 fn item_style_func(items: &dyn Children, i: usize) -> Style {
-    let item_style = Style::new().foreground(Color::from("255"));
+    let item_style = Style::new().foreground(TEXT_PRIMARY);
 
     if let Some(item) = items.at(i) {
         let value = item.value();

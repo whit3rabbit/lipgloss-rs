@@ -50,6 +50,9 @@ fn main() {
   - [True Color](#true-color)
   - [Adaptive & Complete Colors](#adaptive--complete-colors)
 - [Gradients & Color Interpolation](#gradients--color-interpolation)
+- [Theme Showcase](#theme-showcase)
+  - [Adaptive Color Constants](#adaptive-color-constants)
+  - [Testing Theme Adaptation](#testing-theme-adaptation)
 - [Formatting](#formatting)
   - [Inline Formatting](#inline-formatting)
   - [Block-Level Formatting](#block-level-formatting)
@@ -82,7 +85,7 @@ Start with everything (core + extras) — recommended:
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.7", features = ["full"] }
+lipgloss-extras = { version = "0.0.8", features = ["full"] }
 ```
 
 Lipgloss-extras (Lipgloss + Extras) will always bring core package over.
@@ -102,14 +105,14 @@ Pick-and-choose features:
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.7", features = ["lists", "tables"] }
+lipgloss-extras = { version = "0.0.8", features = ["lists", "tables"] }
 ```
 
 Prefer core only? You can depend directly on `lipgloss`:
 
 ```toml
 [dependencies]
-lipgloss = "0.0.7"
+lipgloss = "0.0.8"
 ```
 
 ## Colors
@@ -244,6 +247,68 @@ let bright_style = Style::new()
     .background(lighten(&base_color, 0.3))
     .foreground(Color::from("#FFFFFF"));
 ```
+
+## Theme Showcase
+
+`lipgloss-rs` includes a comprehensive theming system with built-in adaptive colors that automatically adjust based on terminal background detection.
+
+![Theme Showcase](examples/theme-showcase/demo.png)
+
+### Adaptive Color Constants
+
+The library provides semantic color constants that adapt to light/dark backgrounds:
+
+```rust
+use lipgloss_extras::lipgloss::{
+    Style, 
+    TEXT_PRIMARY, TEXT_MUTED, TEXT_SUBTLE,
+    STATUS_SUCCESS, STATUS_WARNING, STATUS_ERROR,
+    ACCENT_PRIMARY, SURFACE_ELEVATED
+};
+
+// Text hierarchy - automatically adjusts contrast
+let title = Style::new().foreground(TEXT_PRIMARY).bold(true);
+let body = Style::new().foreground(TEXT_MUTED);
+let caption = Style::new().foreground(TEXT_SUBTLE).italic(true);
+
+// Status indicators - semantic colors for different states
+let success = Style::new()
+    .foreground(STATUS_SUCCESS)
+    .render("✓ Operation completed");
+    
+let warning = Style::new()
+    .background(STATUS_WARNING)
+    .foreground(Color::from("#000000"))
+    .padding(0, 1, 0, 1)
+    .render("⚠ Check configuration");
+
+// UI surfaces with proper contrast
+let card = Style::new()
+    .background(SURFACE_ELEVATED)
+    .border(rounded_border())
+    .padding(1, 2, 1, 2);
+```
+
+### Testing Theme Adaptation
+
+Run the theme showcase to see all available semantic colors:
+
+```bash
+cargo run --package theme-showcase
+
+# Test with explicit light theme
+COLORFGBG='0;15' cargo run --package theme-showcase
+
+# Test with explicit dark theme  
+COLORFGBG='15;0' cargo run --package theme-showcase
+```
+
+The showcase displays:
+- Complete color palette with light/dark variants
+- Text hierarchy examples
+- Status indicators and badges
+- Interactive element styling
+- Complex layouts with unified theming
 
 ## Formatting
 
@@ -647,7 +712,7 @@ Prefer a single dependency that re-exports everything? Use `lipgloss-extras`:
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.7", features = ["full"] }
+lipgloss-extras = { version = "0.0.8", features = ["full"] }
 ```
 
 ## Bubbletea Integration

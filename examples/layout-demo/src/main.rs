@@ -47,16 +47,16 @@ fn main() {
     // Style definitions
     let normal = Color::from("#EEEEEE");
     let subtle = AdaptiveColor {
-        Light: "#D9DCCF".to_string(),
-        Dark: "#383838".to_string(),
+        Light: "#D9DCCF",
+        Dark: "#383838",
     };
     let highlight = AdaptiveColor {
-        Light: "#874BFD".to_string(),
-        Dark: "#7D56F4".to_string(),
+        Light: "#874BFD",
+        Dark: "#7D56F4",
     };
     let special = AdaptiveColor {
-        Light: "#43BF6D".to_string(),
-        Dark: "#73F59F".to_string(),
+        Light: "#43BF6D",
+        Dark: "#73F59F",
     };
     let blends = blend_1d(50, vec![Color::from("#F25D94"), Color::from("#EDFF82")]);
 
@@ -172,8 +172,8 @@ fn main() {
             Style::new()
                 .strikethrough(true)
                 .foreground(AdaptiveColor {
-                    Light: "#969B86".to_string(),
-                    Dark: "#696969".to_string(),
+                    Light: "#969B86",
+                    Dark: "#696969",
                 })
                 .render(s)
         )
@@ -196,8 +196,8 @@ fn main() {
         .padding(0, 1, 0, 1);
 
     let status_bar_style = Style::new().background(AdaptiveColor {
-        Light: "#D9DCCF".to_string(),
-        Dark: "#353533".to_string(),
+        Light: "#D9DCCF",
+        Dark: "#353533",
     });
 
     let status_style = status_nugget.clone().background(Color::from("#FF5F87"));

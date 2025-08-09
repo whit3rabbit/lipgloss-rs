@@ -1,3 +1,53 @@
+//! Terminal border drawing and box-drawing character definitions.
+//!
+//! This module provides comprehensive border support for terminal user interfaces,
+//! including predefined border styles and utilities for creating custom borders.
+//! All borders support Unicode box-drawing characters as well as ASCII fallbacks
+//! for maximum compatibility across different terminal environments.
+//!
+//! # Border Styles
+//!
+//! The module includes several predefined border styles:
+//! - **Normal**: Standard single-line box-drawing characters (`┌─┐`)
+//! - **Rounded**: Softer corners with rounded box-drawing characters (`╭─╮`)
+//! - **Thick**: Bold, heavy box-drawing characters (`┏━┓`)
+//! - **Double**: Elegant double-line characters (`╔═╗`)
+//! - **Block**: Solid block characters for maximum visual impact (`███`)
+//! - **ASCII**: Universal ASCII characters for compatibility (`+-+`)
+//! - **Markdown**: Simple format compatible with Markdown tables (`|-|`)
+//! - **Hidden**: Invisible borders using spaces for layout purposes
+//! - **Half-block**: Special effects using Unicode half-block characters
+//!
+//! # Unicode Support
+//!
+//! All border functions properly handle Unicode characters with varying display
+//! widths, including CJK characters and emoji. The width calculation functions
+//! ensure proper alignment regardless of character complexity.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use lipgloss::{Border, normal_border, rounded_border, ascii_border};
+//!
+//! // Use predefined borders
+//! let normal = normal_border();   // ┌─┐
+//! let rounded = rounded_border(); // ╭─╮
+//! let ascii = ascii_border();     // +-+
+//!
+//! // Create custom borders
+//! let custom = Border::new(
+//!     "=", "=", "||", "||", "++", "++", "++", "++",
+//!     "||", "||", "++", "++", "++",
+//! );
+//! ```
+//!
+//! # Safety and Performance
+//!
+//! - All border characters are statically allocated string slices for zero-cost usage
+//! - Unicode width calculations are performed efficiently using the `unicode-width` crate
+//! - Border creation is const-evaluable where possible for compile-time optimization
+//! - No heap allocations or dynamic memory usage in border operations
+
 /// Defines all the glyphs that make up a box border for terminal user interfaces.
 ///
 /// A `Border` contains all the Unicode characters needed to draw complete box borders,
@@ -55,23 +105,28 @@ impl Border {
     ///
     /// This constructor allows you to define a completely custom border style by
     /// specifying characters for each part of the border: edges, corners, and
-    /// junction points for table rendering.
+    /// junction points for table rendering. All parameters must be `&'static str`
+    /// to ensure the border can be used in const contexts and has a static lifetime.
+    ///
+    /// The junction parameters (`middle_*`) are primarily used for table rendering
+    /// where borders need to connect at intersection points. For simple box borders,
+    /// these can be set to the same values as corners or left empty.
     ///
     /// # Arguments
     ///
-    /// * `top` - Character for the top edge
-    /// * `bottom` - Character for the bottom edge  
-    /// * `left` - Character for the left edge
-    /// * `right` - Character for the right edge
-    /// * `top_left` - Character for the top-left corner
-    /// * `top_right` - Character for the top-right corner
-    /// * `bottom_left` - Character for the bottom-left corner
-    /// * `bottom_right` - Character for the bottom-right corner
-    /// * `middle_left` - Character for left junction points (tables)
-    /// * `middle_right` - Character for right junction points (tables)
-    /// * `middle` - Character for cross junction points (tables)
-    /// * `middle_top` - Character for top junction points (tables)
-    /// * `middle_bottom` - Character for bottom junction points (tables)
+    /// * `top` - Character(s) for the top edge
+    /// * `bottom` - Character(s) for the bottom edge  
+    /// * `left` - Character(s) for the left edge
+    /// * `right` - Character(s) for the right edge
+    /// * `top_left` - Character(s) for the top-left corner
+    /// * `top_right` - Character(s) for the top-right corner
+    /// * `bottom_left` - Character(s) for the bottom-left corner
+    /// * `bottom_right` - Character(s) for the bottom-right corner
+    /// * `middle_left` - Character(s) for left junction points (table borders)
+    /// * `middle_right` - Character(s) for right junction points (table borders)
+    /// * `middle` - Character(s) for cross junction points (table borders)
+    /// * `middle_top` - Character(s) for top junction points (table borders)
+    /// * `middle_bottom` - Character(s) for bottom junction points (table borders)
     ///
     /// # Examples
     ///
@@ -88,6 +143,12 @@ impl Border {
     /// let unicode_border = Border::new(
     ///     "─", "─", "│", "│", "┌", "┐", "└", "┘",
     ///     "├", "┤", "┼", "┬", "┴",
+    /// );
+    ///
+    /// // Create a decorative border with multi-character components
+    /// let decorative = Border::new(
+    ///     "═══", "═══", "║", "║", "╔", "╗", "╚", "╝",
+    ///     "╠", "╣", "╬", "╦", "╩",
     /// );
     /// ```
     #[allow(clippy::too_many_arguments)]
@@ -224,13 +285,19 @@ impl Border {
 ///
 /// This creates a clean, professional-looking border using Unicode box-drawing
 /// characters. It's the most commonly used border style and works well in most
-/// terminal environments that support Unicode.
+/// terminal environments that support Unicode. This is the recommended default
+/// border for most applications.
 ///
-/// The border uses these characters:
-/// - Horizontal lines: `─`
-/// - Vertical lines: `│`
-/// - Corners: `┌┐└┘`
-/// - Junction points: `├┤┼┬┴`
+/// The border uses these Unicode characters:
+/// - Horizontal lines: `─` (U+2500)
+/// - Vertical lines: `│` (U+2502)
+/// - Corners: `┌` (U+250C), `┐` (U+2510), `└` (U+2514), `┘` (U+2518)
+/// - Junction points: `├` (U+251C), `┤` (U+2524), `┼` (U+253C), `┬` (U+252C), `┴` (U+2534)
+///
+/// # Terminal Compatibility
+///
+/// This border requires Unicode support in the terminal. For environments without
+/// Unicode support, consider using [`ascii_border()`] instead.
 ///
 /// # Examples
 ///
@@ -239,6 +306,9 @@ impl Border {
 ///
 /// let border = normal_border();
 /// println!("Corner: {}", border.top_left); // prints: ┌
+///
+/// // Use with a Style
+/// let style = lipgloss::Style::new().border(border);
 /// ```
 pub const fn normal_border() -> Border {
     Border::new(
@@ -403,14 +473,22 @@ pub const fn markdown_border() -> Border {
 /// Returns a border using only ASCII characters.
 ///
 /// This creates a simple, universally compatible border using only basic ASCII
-/// characters. This border style works in any terminal or text environment,
-/// making it ideal for maximum compatibility across different systems and
-/// terminal emulators.
+/// characters (U+0020 to U+007E). This border style works in any terminal or
+/// text environment, making it ideal for maximum compatibility across different
+/// systems, terminal emulators, and text processing tools.
 ///
-/// The border uses these characters:
-/// - Horizontal lines: `-`
-/// - Vertical lines: `|`
-/// - All corners and junctions: `+`
+/// The border uses these standard ASCII characters:
+/// - Horizontal lines: `-` (U+002D)
+/// - Vertical lines: `|` (U+007C)
+/// - All corners and junctions: `+` (U+002B)
+///
+/// # Use Cases
+///
+/// - Legacy terminal environments
+/// - Text-only interfaces
+/// - Maximum compatibility requirements
+/// - Embedded systems with limited character sets
+/// - Plain text documentation and logs
 ///
 /// # Examples
 ///
@@ -421,6 +499,7 @@ pub const fn markdown_border() -> Border {
 /// println!("ASCII corner: {}", border.top_left); // prints: +
 ///
 /// // Guaranteed to work in any terminal environment
+/// let style = lipgloss::Style::new().border(border);
 /// ```
 pub const fn ascii_border() -> Border {
     Border::new(
@@ -485,16 +564,36 @@ use unicode_width::UnicodeWidthChar;
 /// This function iterates through all characters in a string and returns the
 /// width of the widest character as it would appear in a terminal. This is
 /// important for Unicode characters that may take up more than one column
-/// (like CJK characters or certain symbols).
+/// (like CJK characters, emoji, or certain symbols).
+///
+/// The width calculation uses the `unicode-width` crate which follows the
+/// Unicode Standard Annex #11 (East Asian Width) to determine character
+/// display widths accurately.
 ///
 /// # Arguments
 ///
-/// * `s` - The string to analyze
+/// * `s` - The string to analyze for maximum character width
 ///
 /// # Returns
 ///
 /// The maximum character width in terminal columns, or 0 if all characters
 /// have zero width or the string is empty.
+///
+/// # Examples
+///
+/// ```ignore
+/// // ASCII characters typically have width 1
+/// assert_eq!(max_rune_width("abc"), 1);
+///
+/// // CJK characters typically have width 2  
+/// assert_eq!(max_rune_width("太平洋"), 2);
+///
+/// // Mixed width strings return the maximum
+/// assert_eq!(max_rune_width("a太b"), 2);
+///
+/// // Zero-width and control characters
+/// assert_eq!(max_rune_width("\u{200B}"), 0); // Zero-width space
+/// ```
 fn max_rune_width(s: &str) -> usize {
     let mut maxw = 0usize;
     for ch in s.chars() {
@@ -510,7 +609,12 @@ fn max_rune_width(s: &str) -> usize {
 ///
 /// This function takes a slice of border component strings and returns the
 /// maximum display width needed to accommodate any of them. This ensures
-/// proper alignment when border components have different visual widths.
+/// proper alignment when border components have different visual widths,
+/// which is crucial for borders that mix different character types.
+///
+/// This is used internally by the Border edge size methods to calculate
+/// the space needed for each border edge, accounting for corner characters
+/// that might be wider than edge characters.
 ///
 /// # Arguments
 ///
@@ -519,6 +623,18 @@ fn max_rune_width(s: &str) -> usize {
 /// # Returns
 ///
 /// The maximum character width in terminal columns needed for any component.
+///
+/// # Examples
+///
+/// ```ignore
+/// // All ASCII characters have width 1
+/// let parts = ["+", "-", "+"];
+/// assert_eq!(get_border_edge_width(&parts), 1);
+///
+/// // Mixed width components - returns maximum
+/// let parts = ["+", "太", "+"]; // CJK character
+/// assert_eq!(get_border_edge_width(&parts), 2);
+/// ```
 fn get_border_edge_width(parts: &[&str]) -> usize {
     let mut maxw = 0usize;
     for p in parts {

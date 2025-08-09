@@ -1,0 +1,10 @@
+[package]
+name = "theme-showcase"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lipgloss = { path = "../../lipgloss" }
+lipgloss-list = { path = "../../lipgloss-list" }
+lipgloss-table = { path = "../../lipgloss-table" }
+lipgloss-tree = { path = "../../lipgloss-tree" }

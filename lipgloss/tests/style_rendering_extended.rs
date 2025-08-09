@@ -216,8 +216,8 @@ fn adaptive_color_changes_with_background() {
     use lipgloss::renderer::Renderer;
 
     let adaptive = AdaptiveColor {
-        Light: "#0000FF".to_string(),
-        Dark: "#FF0000".to_string(),
+        Light: "#0000FF",
+        Dark: "#FF0000",
     };
     let base = Style::default().foreground(adaptive);
 

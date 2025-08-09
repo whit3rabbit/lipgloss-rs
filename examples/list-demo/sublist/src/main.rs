@@ -1,4 +1,10 @@
-use lipgloss::{Color, Style};
+use lipgloss::{
+    color::{
+        ACCENT_PRIMARY, ACCENT_SECONDARY, LIST_ITEM_PRIMARY, LIST_ITEM_SECONDARY, STATUS_SUCCESS,
+        TEXT_MUTED, TEXT_PRIMARY, TEXT_SUBTLE,
+    },
+    Style,
+};
 use lipgloss::{CENTER, RIGHT};
 use lipgloss_list::{dash, List};
 use lipgloss_table::{Table, HEADER_ROW};
@@ -12,17 +18,15 @@ fn checklist_enumerator(_items: &dyn Children, index: usize) -> String {
 }
 
 fn checklist_enum_style(_items: &dyn Children, index: usize) -> Style {
-    let special = Color::from("#73F59F");
     match index {
-        1 | 2 | 4 => Style::new().foreground(special).padding_right(1),
+        1 | 2 | 4 => Style::new().foreground(STATUS_SUCCESS).padding_right(1),
         _ => Style::new().padding_right(1),
     }
 }
 
 fn checklist_item_style(_items: &dyn Children, index: usize) -> Style {
-    let dim_color = Color::from("#696969");
     match index {
-        1 | 2 | 4 => Style::new().strikethrough(true).foreground(dim_color),
+        1 | 2 | 4 => Style::new().strikethrough(true).foreground(TEXT_SUBTLE),
         _ => Style::new(),
     }
 }
@@ -39,31 +43,26 @@ fn documents_enumerator(_items: &dyn Children, i: usize) -> String {
 
 fn documents_item_style(_items: &dyn Children, i: usize) -> Style {
     let base_style = Style::new().margin_bottom(1).margin_left(1);
-    let dim_color = Color::from("250");
-    let highlight_color = Color::from("#EE6FF8");
 
     if SELECTED == i {
-        base_style.foreground(highlight_color)
+        base_style.foreground(ACCENT_PRIMARY)
     } else {
-        base_style.foreground(dim_color)
+        base_style.foreground(TEXT_MUTED)
     }
 }
 
 fn documents_enum_style(_items: &dyn Children, i: usize) -> Style {
-    let dim_color = Color::from("250");
-    let highlight_color = Color::from("#EE6FF8");
-
     if SELECTED == i {
-        Style::new().foreground(highlight_color)
+        Style::new().foreground(ACCENT_PRIMARY)
     } else {
-        Style::new().foreground(dim_color)
+        Style::new().foreground(TEXT_MUTED)
     }
 }
 
 fn main() {
-    let purple = Style::new().foreground(Color::from("99")).margin_right(1);
+    let purple = Style::new().foreground(LIST_ITEM_SECONDARY).margin_right(1);
 
-    let pink = Style::new().foreground(Color::from("212")).margin_right(1);
+    let pink = Style::new().foreground(LIST_ITEM_PRIMARY).margin_right(1);
 
     let faint = Style::new().faint(true);
 
@@ -115,8 +114,8 @@ fn main() {
                     // History box
                     &(Style::new()
                         .bold(true)
-                        .foreground(Color::from("#FAFAFA"))
-                        .background(Color::from("#7D56F4"))
+                        .foreground(TEXT_PRIMARY)
+                        .background(ACCENT_SECONDARY)
                         .align_horizontal(CENTER)
                         .align_vertical(CENTER)
                         .padding(1, 3, 1, 3)
@@ -129,7 +128,7 @@ fn main() {
                 .item(
                     // Small table
                     {
-                        let label_style = Style::new().foreground(Color::from("#7D56F4"));
+                        let label_style = Style::new().foreground(ACCENT_SECONDARY);
                         let mut t = Table::new()
                             .border(lipgloss::normal_border())
                             .border_style(label_style.margin_right(0))

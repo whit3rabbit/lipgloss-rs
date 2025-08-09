@@ -50,21 +50,37 @@ pub fn header_row_style(row: i32, _col: usize) -> Style {
 
 /// ZebraStyle alternates background colors between rows for better readability.
 pub fn zebra_style(row: i32, _col: usize) -> Style {
-    use lipgloss::Color;
+    use lipgloss::color::AdaptiveColor;
+    let table_row_even_bg = AdaptiveColor {
+        Light: "#F9FAFB",
+        Dark: "#1F1F1F",
+    };
     match row {
         HEADER_ROW => Style::new().bold(true),
-        _ if row % 2 == 0 => Style::new().background(Color::from("#f0f0f0")),
+        _ if row % 2 == 0 => Style::new().background(table_row_even_bg),
         _ => Style::new(),
     }
 }
 
 /// MinimalStyle provides subtle styling with header emphasis and muted alternating rows.
 pub fn minimal_style(row: i32, _col: usize) -> Style {
-    use lipgloss::Color;
+    use lipgloss::color::AdaptiveColor;
+    let table_header_text = AdaptiveColor {
+        Light: "#171717",
+        Dark: "#F5F5F5",
+    };
+    let table_row_text = AdaptiveColor {
+        Light: "#262626",
+        Dark: "#FAFAFA",
+    };
+    let text_muted = AdaptiveColor {
+        Light: "#737373",
+        Dark: "#A3A3A3",
+    };
     match row {
-        HEADER_ROW => Style::new().bold(true).foreground(Color::from("#333333")),
-        _ if row % 2 == 0 => Style::new().foreground(Color::from("#666666")),
-        _ => Style::new().foreground(Color::from("#444444")),
+        HEADER_ROW => Style::new().bold(true).foreground(table_header_text),
+        _ if row % 2 == 0 => Style::new().foreground(text_muted),
+        _ => Style::new().foreground(table_row_text),
     }
 }
 
@@ -985,11 +1001,14 @@ mod tests {
 
     #[test]
     fn test_cell_styling_with_lipgloss() {
-        use lipgloss::{Color, Style};
+        use lipgloss::{
+            color::{STATUS_ERROR, TEXT_MUTED},
+            Style,
+        };
 
         let style_func = |row: i32, _col: usize| match row {
-            HEADER_ROW => Style::new().bold(true).foreground(Color::from("#FF0000")),
-            _ if row % 2 == 0 => Style::new().foreground(Color::from("#888888")),
+            HEADER_ROW => Style::new().bold(true).foreground(STATUS_ERROR),
+            _ if row % 2 == 0 => Style::new().foreground(TEXT_MUTED),
             _ => Style::new().italic(true),
         };
 
@@ -1005,7 +1024,7 @@ mod tests {
         assert!(output.contains("Alice")); // Data should be present
 
         // Since we're applying styles, there should be ANSI escape sequences
-        assert!(output.contains("\x1b[") || output.len() > 50); // Either ANSI codes or substantial content
+        assert!(output.contains("\\x1b[") || output.len() > 50); // Either ANSI codes or substantial content
     }
 
     #[test]
@@ -1117,11 +1136,14 @@ mod tests {
 
     #[test]
     fn test_boxed_style_function() {
-        use lipgloss::{Color, Style};
+        use lipgloss::{
+            color::{STATUS_ERROR, STATUS_WARNING},
+            Style,
+        };
 
         // Create a closure that captures variables
-        let error_color = Color::from("#FF0000");
-        let warning_color = Color::from("#FFA500");
+        let error_color = STATUS_ERROR;
+        let warning_color = STATUS_WARNING;
 
         let mut table = Table::new()
             .headers(vec!["Status", "Message"])

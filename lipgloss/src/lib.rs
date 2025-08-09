@@ -31,6 +31,40 @@
 //! println!("{}", rendered);
 //! ```
 //!
+//! # Theme-Aware Color Best Practices
+//!
+//! For applications that work across different terminal themes (light and dark),
+//! use the pre-defined [`color`] constants instead of hardcoded colors:
+//!
+//! ```rust
+//! use lipgloss::{Style, color::{TEXT_PRIMARY, ACCENT_PRIMARY, STATUS_SUCCESS}};
+//!
+//! // ✅ Theme-aware (adapts to light/dark backgrounds)
+//! let good_style = Style::new()
+//!     .foreground(TEXT_PRIMARY)         // Readable in any theme
+//!     .border_foreground(ACCENT_PRIMARY); // Consistent brand color
+//!
+//! // ❌ Hardcoded (breaks in some themes)
+//! let bad_style = Style::new()
+//!     .foreground("#000000".to_string()) // Invisible on dark backgrounds!
+//!     .border_foreground("#ff0000".to_string()); // Harsh red everywhere
+//!
+//! // Status indicators with semantic colors
+//! let success_msg = Style::new()
+//!     .foreground(STATUS_SUCCESS)
+//!     .render("✓ Task completed successfully");
+//! ```
+//!
+//! **Available color constants for common UI patterns:**
+//! - **Text**: `TEXT_PRIMARY`, `TEXT_MUTED`, `TEXT_SUBTLE`, `TEXT_HEADER`  
+//! - **Accents**: `ACCENT_PRIMARY`, `ACCENT_SECONDARY`, `INTERACTIVE`
+//! - **Status**: `STATUS_SUCCESS`, `STATUS_WARNING`, `STATUS_ERROR`, `STATUS_INFO`
+//! - **Surfaces**: `SURFACE_SUBTLE`, `SURFACE_ELEVATED`
+//! - **Lists**: `LIST_ITEM_PRIMARY`, `LIST_ENUMERATOR`
+//! - **Tables**: `TABLE_HEADER_TEXT`, `TABLE_ROW_TEXT`, `TABLE_BORDER`
+//!
+//! See the `theme-showcase` example for a comprehensive demonstration.
+//!
 //! # Core Modules
 //!
 //! - [`style`] - Core styling functionality and the main `Style` struct

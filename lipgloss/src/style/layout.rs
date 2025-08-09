@@ -169,6 +169,59 @@ impl Style {
         self
     }
 
+    /// Set padding with two values: vertical and horizontal.
+    ///
+    /// This is a convenient shorthand for setting top/bottom and left/right
+    /// padding with the same values. Equivalent to calling
+    /// `padding(vertical, horizontal, vertical, horizontal)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertical` - Padding for top and bottom sides
+    /// * `horizontal` - Padding for left and right sides
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lipgloss::Style;
+    ///
+    /// // 2 characters top/bottom, 4 characters left/right
+    /// let padded = Style::new().padding_2(2, 4);
+    ///
+    /// // Equivalent to:
+    /// let equivalent = Style::new().padding(2, 4, 2, 4);
+    /// ```
+    pub fn padding_2(self, vertical: i32, horizontal: i32) -> Self {
+        self.padding(vertical, horizontal, vertical, horizontal)
+    }
+
+    /// Set padding with three values: top, horizontal, and bottom.
+    ///
+    /// This is a convenient shorthand where the horizontal value applies to
+    /// both left and right sides. Equivalent to calling
+    /// `padding(top, horizontal, bottom, horizontal)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `top` - Top padding
+    /// * `horizontal` - Padding for left and right sides
+    /// * `bottom` - Bottom padding
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lipgloss::Style;
+    ///
+    /// // 1 char top, 3 chars left/right, 2 chars bottom
+    /// let padded = Style::new().padding_3(1, 3, 2);
+    ///
+    /// // Equivalent to:
+    /// let equivalent = Style::new().padding(1, 3, 2, 3);
+    /// ```
+    pub fn padding_3(self, top: i32, horizontal: i32, bottom: i32) -> Self {
+        self.padding(top, horizontal, bottom, horizontal)
+    }
+
     /// Set left padding for the styled content.
     ///
     /// Left padding adds space on the left side of the content, between the
@@ -366,6 +419,59 @@ impl Style {
         self.set_prop(MARGIN_BOTTOM_KEY);
         self.set_prop(MARGIN_LEFT_KEY);
         self
+    }
+
+    /// Set margin with two values: vertical and horizontal.
+    ///
+    /// This is a convenient shorthand for setting top/bottom and left/right
+    /// margin with the same values. Equivalent to calling
+    /// `margin(vertical, horizontal, vertical, horizontal)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertical` - Margin for top and bottom sides
+    /// * `horizontal` - Margin for left and right sides
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lipgloss::Style;
+    ///
+    /// // 1 character top/bottom, 2 characters left/right
+    /// let spaced = Style::new().margin_2(1, 2);
+    ///
+    /// // Equivalent to:
+    /// let equivalent = Style::new().margin(1, 2, 1, 2);
+    /// ```
+    pub fn margin_2(self, vertical: i32, horizontal: i32) -> Self {
+        self.margin(vertical, horizontal, vertical, horizontal)
+    }
+
+    /// Set margin with three values: top, horizontal, and bottom.
+    ///
+    /// This is a convenient shorthand where the horizontal value applies to
+    /// both left and right sides. Equivalent to calling
+    /// `margin(top, horizontal, bottom, horizontal)`.
+    ///
+    /// # Arguments
+    ///
+    /// * `top` - Top margin
+    /// * `horizontal` - Margin for left and right sides
+    /// * `bottom` - Bottom margin
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lipgloss::Style;
+    ///
+    /// // 2 chars top, 1 char left/right, 1 char bottom
+    /// let spaced = Style::new().margin_3(2, 1, 1);
+    ///
+    /// // Equivalent to:
+    /// let equivalent = Style::new().margin(2, 1, 1, 1);
+    /// ```
+    pub fn margin_3(self, top: i32, horizontal: i32, bottom: i32) -> Self {
+        self.margin(top, horizontal, bottom, horizontal)
     }
 
     /// Set left margin for the styled box.
