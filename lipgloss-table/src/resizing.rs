@@ -1,12 +1,30 @@
-/// ResizerColumn is a column in the resizer.
+/// A column representation in the table resizer with width analysis and content.
+///
+/// `ResizerColumn` stores statistical information about a table column including
+/// width measurements, content, and padding requirements. This data is used by
+/// the resizing algorithm to determine optimal column widths while respecting
+/// content constraints and table width limits.
 #[derive(Debug, Clone)]
 pub struct ResizerColumn {
+    /// The zero-based column index within the table.
     pub index: usize,
+    
+    /// The minimum content width found in this column across all rows.
     pub min: usize,
+    
+    /// The maximum content width found in this column across all rows.
     pub max: usize,
+    
+    /// The median content width for this column, used for balanced sizing.
     pub median: usize,
+    
+    /// All cell content for this column, organized by row.
     pub rows: Vec<Vec<String>>,
-    pub x_padding: usize, // horizontal padding
+    
+    /// Horizontal padding requirement (margins + padding from styles).
+    pub x_padding: usize,
+    
+    /// Fixed width constraint from style specifications, if any.
     pub fixed_width: usize,
 }
 
@@ -52,19 +70,40 @@ impl ResizerColumn {
     }
 }
 
-/// Resizer is a table resizer.
+/// A comprehensive table resizing engine that calculates optimal layouts.
+///
+/// The `Resizer` analyzes table content, applies constraints, and computes
+/// the best possible layout for tables within specified dimensions. It handles
+/// content analysis, width distribution, padding calculations, and height
+/// management to create well-formatted tables.
 #[derive(Debug)]
 pub struct Resizer {
+    /// Target width for the entire table in characters.
     pub table_width: i32,
+    
+    /// Target height for the table (used for height constraints).
     pub table_height: i32,
+    
+    /// Column headers as strings (empty if no headers).
     pub headers: Vec<String>,
+    
+    /// All table rows including headers, organized as vectors of cell content.
     pub all_rows: Vec<Vec<String>>,
+    
+    /// Calculated height for each row in the table.
     pub row_heights: Vec<usize>,
+    
+    /// Column analysis data with width statistics and content.
     pub columns: Vec<ResizerColumn>,
 
+    /// Whether text wrapping is enabled for content that exceeds column width.
     pub wrap: bool,
+    
+    /// Whether column separators/borders are enabled between columns.
     pub border_column: bool,
-    pub y_paddings: Vec<Vec<usize>>, // vertical paddings
+    
+    /// Vertical padding requirements for each cell, organized by [row][column].
+    pub y_paddings: Vec<Vec<usize>>,
 }
 
 impl Resizer {
