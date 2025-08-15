@@ -1,5 +1,110 @@
+//! # lipgloss-table
+//!
+//! A flexible and powerful table rendering library for terminal applications.
+//!
+//! This crate provides a comprehensive table rendering system with advanced styling,
+//! layout options, and terminal-aware text handling. It's designed to work seamlessly
+//! with the `lipgloss` styling library to create beautiful terminal user interfaces.
+//!
+//! ## Features
+//!
+//! - **Flexible Table Construction**: Build tables using a fluent builder pattern
+//! - **Advanced Styling**: Apply different styles to headers, rows, and individual cells
+//! - **Border Customization**: Control all aspects of table borders and separators
+//! - **Responsive Layout**: Automatic width detection and content wrapping/truncation
+//! - **Height Constraints**: Set maximum heights with automatic scrolling and overflow indicators
+//! - **ANSI-Aware**: Proper handling of ANSI escape sequences in content
+//! - **Memory Safe**: Built-in protections against memory exhaustion from malicious input
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use lipgloss_table::{Table, HEADER_ROW, header_row_style};
+//! use lipgloss::{Style, Color};
+//!
+//! // Create a simple table
+//! let mut table = Table::new()
+//!     .headers(vec!["Name", "Age", "City"])
+//!     .row(vec!["Alice", "30", "New York"])
+//!     .row(vec!["Bob", "25", "London"])
+//!     .style_func(header_row_style);
+//!
+//! println!("{}", table.render());
+//! ```
+//!
+//! ## Advanced Usage
+//!
+//! ### Custom Styling
+//!
+//! ```rust
+//! use lipgloss_table::{Table, HEADER_ROW};
+//! use lipgloss::{Style, Color};
+//!
+//! let style_func = |row: i32, col: usize| {
+//!     match row {
+//!         HEADER_ROW => Style::new().bold(true).foreground(Color::from("#FFFFFF")),
+//!         _ if row % 2 == 0 => Style::new().background(Color::from("#F0F0F0")),
+//!         _ => Style::new(),
+//!     }
+//! };
+//!
+//! let mut table = Table::new()
+//!     .headers(vec!["Product", "Price", "Stock"])
+//!     .rows(vec![
+//!         vec!["Widget A", "$10.99", "50"],
+//!         vec!["Widget B", "$15.99", "25"],
+//!         vec!["Widget C", "$8.99", "100"],
+//!     ])
+//!     .style_func(style_func)
+//!     .width(40);
+//!
+//! println!("{}", table.render());
+//! ```
+//!
+//! ### Height-Constrained Tables with Scrolling
+//!
+//! ```rust
+//! use lipgloss_table::Table;
+//!
+//! let mut table = Table::new()
+//!     .headers(vec!["Item", "Description"])
+//!     .height(10)  // Limit table to 10 lines
+//!     .offset(5);  // Skip first 5 rows (scrolling)
+//!
+//! // Add many rows...
+//! for i in 1..=100 {
+//!     table = table.row(vec![format!("Item {}", i), "Description".to_string()]);
+//! }
+//!
+//! println!("{}", table.render());
+//! println!("Table height: {}", table.compute_height());
+//! ```
+//!
+//! ## Predefined Style Functions
+//!
+//! The crate includes several predefined styling functions:
+//!
+//! - [`default_styles`]: Basic styling with no attributes
+//! - [`header_row_style`]: Bold headers with default data rows
+//! - [`zebra_style`]: Alternating row backgrounds for better readability
+//! - [`minimal_style`]: Subtle styling with muted colors
+//! - [`column_style_func`]: Factory for creating column-specific styles
+//!
+//! ## Integration with lipgloss
+//!
+//! This crate is designed to work seamlessly with the `lipgloss` styling library.
+//! All styling functions receive `lipgloss::Style` objects and can use the full
+//! range of lipgloss features including colors, borders, padding, and alignment.
+
+#![warn(missing_docs)]
+
+/// Internal module for table resizing logic and column width calculations.
 pub mod resizing;
+
+/// Internal module for data handling and row management.
 pub mod rows;
+
+/// Internal utility functions for table operations.
 pub mod util;
 
 use lipgloss::security::{safe_repeat, safe_str_repeat};
@@ -35,12 +140,67 @@ pub const HEADER_ROW: i32 = -1;
 /// ```
 pub type StyleFunc = fn(row: i32, col: usize) -> Style;
 
-/// DefaultStyles is a StyleFunc that returns a new Style with no attributes.
+/// A basic style function that applies no formatting to any cells.
+///
+/// This function serves as the default styling approach, returning a plain
+/// `Style` with no attributes for all table cells. It's useful as a starting
+/// point or when you want completely unstyled table content.
+///
+/// # Arguments
+///
+/// * `_row` - The row index (unused, but required by the `StyleFunc` signature)
+/// * `_col` - The column index (unused, but required by the `StyleFunc` signature)
+///
+/// # Returns
+///
+/// A new `Style` instance with no formatting applied.
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_table::{Table, default_styles};
+///
+/// let mut table = Table::new()
+///     .headers(vec!["Name", "Age"])
+///     .row(vec!["Alice", "30"])
+///     .style_func(default_styles);
+///
+/// println!("{}", table.render());
+/// ```
 pub fn default_styles(_row: i32, _col: usize) -> Style {
     Style::new()
 }
 
-/// HeaderRowStyle applies bold styling to header rows and default styling to data rows.
+/// A style function that makes header rows bold while leaving data rows unstyled.
+///
+/// This function provides a simple but effective styling approach by applying
+/// bold formatting to header rows (identified by `HEADER_ROW`) while leaving
+/// all data rows with default styling. This creates a clear visual distinction
+/// between headers and content.
+///
+/// # Arguments
+///
+/// * `row` - The row index to style (headers use `HEADER_ROW` constant)
+/// * `_col` - The column index (unused, but required by the `StyleFunc` signature)
+///
+/// # Returns
+///
+/// * Bold `Style` for header rows (`HEADER_ROW`)
+/// * Default `Style` for all data rows
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_table::{Table, header_row_style};
+///
+/// let mut table = Table::new()
+///     .headers(vec!["Product", "Price", "Stock"])
+///     .row(vec!["Widget A", "$10.99", "50"])
+///     .row(vec!["Widget B", "$15.99", "25"])
+///     .style_func(header_row_style);
+///
+/// println!("{}", table.render());
+/// ```
 pub fn header_row_style(row: i32, _col: usize) -> Style {
     match row {
         HEADER_ROW => Style::new().bold(true),
@@ -48,7 +208,44 @@ pub fn header_row_style(row: i32, _col: usize) -> Style {
     }
 }
 
-/// ZebraStyle alternates background colors between rows for better readability.
+/// A style function that creates alternating row backgrounds (zebra striping) for improved readability.
+///
+/// This function applies a "zebra stripe" pattern to table rows, alternating between
+/// a default background and a subtle background color for even-numbered rows. The header
+/// row receives bold styling. The background colors are adaptive, changing based on
+/// whether the terminal has a light or dark theme.
+///
+/// # Row Pattern
+///
+/// * Header row: Bold text
+/// * Even data rows (0, 2, 4...): Subtle background color
+/// * Odd data rows (1, 3, 5...): Default background
+///
+/// # Arguments
+///
+/// * `row` - The row index to style (headers use `HEADER_ROW` constant)
+/// * `_col` - The column index (unused, but required by the `StyleFunc` signature)
+///
+/// # Returns
+///
+/// * Bold `Style` for header rows
+/// * `Style` with subtle background for even data rows
+/// * Default `Style` for odd data rows
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_table::{Table, zebra_style};
+///
+/// let mut table = Table::new()
+///     .headers(vec!["Name", "Score", "Grade"])
+///     .row(vec!["Alice", "95", "A"])   // Even row - background color
+///     .row(vec!["Bob", "87", "B"])     // Odd row - default
+///     .row(vec!["Charlie", "92", "A"]) // Even row - background color
+///     .style_func(zebra_style);
+///
+/// println!("{}", table.render());
+/// ```
 pub fn zebra_style(row: i32, _col: usize) -> Style {
     use lipgloss::color::AdaptiveColor;
     let table_row_even_bg = AdaptiveColor {
@@ -62,7 +259,44 @@ pub fn zebra_style(row: i32, _col: usize) -> Style {
     }
 }
 
-/// MinimalStyle provides subtle styling with header emphasis and muted alternating rows.
+/// A subtle style function that provides minimal, professional-looking table styling.
+///
+/// This function creates a clean, minimal aesthetic using muted colors and subtle
+/// contrast. Headers are bold with high-contrast text, while data rows alternate
+/// between normal and muted text colors. All colors are adaptive to work well
+/// with both light and dark terminal themes.
+///
+/// # Row Pattern
+///
+/// * Header row: Bold text with high-contrast color
+/// * Even data rows (0, 2, 4...): Muted text color
+/// * Odd data rows (1, 3, 5...): Normal text color
+///
+/// # Arguments
+///
+/// * `row` - The row index to style (headers use `HEADER_ROW` constant)
+/// * `_col` - The column index (unused, but required by the `StyleFunc` signature)
+///
+/// # Returns
+///
+/// * Bold `Style` with high-contrast foreground for headers
+/// * `Style` with muted foreground for even data rows
+/// * `Style` with normal foreground for odd data rows
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_table::{Table, minimal_style};
+///
+/// let mut table = Table::new()
+///     .headers(vec!["Status", "Task", "Priority"])
+///     .row(vec!["Done", "Fix bug #123", "High"])
+///     .row(vec!["In Progress", "Add new feature", "Medium"])
+///     .row(vec!["Todo", "Update docs", "Low"])
+///     .style_func(minimal_style);
+///
+/// println!("{}", table.render());
+/// ```
 pub fn minimal_style(row: i32, _col: usize) -> Style {
     use lipgloss::color::AdaptiveColor;
     let table_header_text = AdaptiveColor {
@@ -84,8 +318,46 @@ pub fn minimal_style(row: i32, _col: usize) -> Style {
     }
 }
 
-/// ColumnStyleFunc creates a style function that applies specific styles to columns.
-/// Useful for highlighting specific columns like status, priority, or key fields.
+/// Creates a style function that applies column-specific styling to table cells.
+///
+/// This function factory generates a style function that can apply different styles
+/// to specific columns while maintaining consistent header styling. It's particularly
+/// useful for highlighting important columns like status indicators, priority levels,
+/// or key data fields.
+///
+/// # Arguments
+///
+/// * `column_styles` - A vector of tuples where each tuple contains:
+///   - `usize`: The zero-based column index to style
+///   - `Style`: The lipgloss style to apply to that column
+///
+/// # Returns
+///
+/// A closure that implements the `StyleFunc` signature, applying:
+/// * Bold styling to all header row cells
+/// * Column-specific styles to matching data cells
+/// * Default styling to other cells
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_table::{Table, column_style_func};
+/// use lipgloss::{Style, Color};
+///
+/// // Define styles for specific columns
+/// let column_styles = vec![
+///     (0, Style::new().foreground(Color::from("#00FF00"))), // Green for first column
+///     (2, Style::new().bold(true).foreground(Color::from("#FF0000"))), // Bold red for third column
+/// ];
+///
+/// let mut table = Table::new()
+///     .headers(vec!["Status", "Task", "Priority", "Assignee"])
+///     .row(vec!["Active", "Fix bug", "High", "Alice"])
+///     .row(vec!["Done", "Add feature", "Medium", "Bob"])
+///     .style_func_boxed(Box::new(column_style_func(column_styles)));
+///
+/// println!("{}", table.render());
+/// ```
 pub fn column_style_func(column_styles: Vec<(usize, Style)>) -> impl Fn(i32, usize) -> Style {
     move |row: i32, col: usize| {
         // Apply header styling
@@ -108,10 +380,106 @@ pub fn column_style_func(column_styles: Vec<(usize, Style)>) -> impl Fn(i32, usi
     }
 }
 
-/// BoxedStyleFunc is a trait object for more flexible style functions.
+/// A trait object type for flexible style functions that can capture their environment.
+///
+/// This type allows for more complex styling logic that can capture variables
+/// from the surrounding scope, unlike the simple function pointer `StyleFunc`.
+/// It's particularly useful when you need to reference external data or state
+/// in your styling logic.
+///
+/// # Examples
+///
+/// ```rust
+/// use lipgloss_table::{Table, BoxedStyleFunc, HEADER_ROW};
+/// use lipgloss::{Style, Color};
+///
+/// let error_color = Color::from("#FF0000");
+/// let warning_color = Color::from("#FFAA00");
+///
+/// let boxed_style: BoxedStyleFunc = Box::new(move |row: i32, col: usize| {
+///     match (row, col) {
+///         (HEADER_ROW, _) => Style::new().bold(true),
+///         (_, 0) => Style::new().foreground(error_color.clone()),
+///         (_, 1) => Style::new().foreground(warning_color.clone()),
+///         _ => Style::new(),
+///     }
+/// });
+/// ```
 pub type BoxedStyleFunc = Box<dyn Fn(i32, usize) -> Style + Send + Sync>;
 
-/// Table is a type for rendering tables.
+/// A flexible table renderer with advanced styling and layout capabilities.
+///
+/// `Table` provides a comprehensive solution for rendering tabular data in terminal
+/// applications. It supports a wide range of customization options including borders,
+/// styling functions, width/height constraints, text wrapping, and scrolling.
+///
+/// # Features
+///
+/// - **Flexible Content**: Supports headers, multiple data rows, and various data sources
+/// - **Advanced Styling**: Cell-by-cell styling with function-based or closure-based approaches
+/// - **Border Control**: Granular control over all border elements (top, bottom, sides, separators)
+/// - **Layout Management**: Width/height constraints with automatic wrapping and truncation
+/// - **Scrolling Support**: Offset-based scrolling for large datasets
+/// - **ANSI-Aware**: Proper handling of ANSI escape sequences in cell content
+/// - **Memory Safe**: Built-in protections against excessive memory usage
+///
+/// # Builder Pattern
+///
+/// `Table` uses a fluent builder pattern where each method returns `Self`, allowing
+/// for method chaining. Call `render()` to generate the final string representation.
+///
+/// # Examples
+///
+/// ## Basic Table
+///
+/// ```rust
+/// use lipgloss_table::Table;
+///
+/// let mut table = Table::new()
+///     .headers(vec!["Name", "Age", "City"])
+///     .row(vec!["Alice", "30", "New York"])
+///     .row(vec!["Bob", "25", "London"]);
+///
+/// println!("{}", table.render());
+/// ```
+///
+/// ## Styled Table with Width Constraint
+///
+/// ```rust
+/// use lipgloss_table::{Table, zebra_style};
+/// use lipgloss::rounded_border;
+///
+/// let mut table = Table::new()
+///     .headers(vec!["Product", "Description", "Price"])
+///     .rows(vec![
+///         vec!["Widget A", "A useful widget for all your needs", "$19.99"],
+///         vec!["Widget B", "An even more useful widget", "$29.99"],
+///     ])
+///     .width(50)
+///     .border(rounded_border())
+///     .style_func(zebra_style);
+///
+/// println!("{}", table.render());
+/// ```
+///
+/// ## Scrollable Table with Height Limit
+///
+/// ```rust
+/// use lipgloss_table::Table;
+///
+/// let mut large_table = Table::new()
+///     .headers(vec!["ID", "Data"])
+///     .height(10)  // Limit to 10 lines total
+///     .offset(20); // Start from row 20 (scrolling)
+///
+/// // Add many rows...
+/// for i in 1..=1000 {
+///     large_table = large_table.row(vec![i.to_string(), format!("Data {}", i)]);
+/// }
+///
+/// println!("{}", large_table.render());
+/// println!("Actual height: {}", large_table.compute_height());
+/// ```
 pub struct Table {
     style_func: StyleFunc,
     boxed_style_func: Option<BoxedStyleFunc>,
@@ -143,9 +511,39 @@ pub struct Table {
 }
 
 impl Table {
-    /// Creates a new Table that can be modified through different attributes.
+    /// Creates a new `Table` with default settings and no content.
     ///
-    /// By default, a table has rounded borders, basic styling, and no rows.
+    /// The default table configuration includes:
+    /// - Rounded borders (`lipgloss::rounded_border()`)
+    /// - All border sides enabled (top, bottom, left, right, header separator, column separators)
+    /// - Row separators disabled
+    /// - Text wrapping enabled
+    /// - No width or height constraints
+    /// - No content (headers or data rows)
+    /// - Basic styling function (`default_styles`)
+    ///
+    /// # Returns
+    ///
+    /// A new `Table` instance ready for configuration via the builder pattern.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_table::Table;
+    ///
+    /// let table = Table::new();
+    /// assert_eq!(table.compute_height(), 2); // Just top and bottom borders
+    /// ```
+    ///
+    /// ```rust
+    /// use lipgloss_table::Table;
+    ///
+    /// let mut table = Table::new()
+    ///     .headers(vec!["Column 1", "Column 2"])
+    ///     .row(vec!["Data 1", "Data 2"]);
+    ///
+    /// println!("{}", table.render());
+    /// ```
     pub fn new() -> Self {
         Self {
             style_func: default_styles,
@@ -171,21 +569,138 @@ impl Table {
         }
     }
 
-    /// Clears the table rows.
+    /// Removes all data rows from the table while preserving headers and settings.
+    ///
+    /// This method clears only the table's data content, leaving headers, styling,
+    /// borders, and other configuration unchanged. It's useful for reusing a
+    /// configured table with different data.
+    ///
+    /// # Returns
+    ///
+    /// The `Table` instance with all data rows removed, enabling method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_table::Table;
+    ///
+    /// let mut table = Table::new()
+    ///     .headers(vec!["Name", "Age"])
+    ///     .row(vec!["Alice", "30"])
+    ///     .row(vec!["Bob", "25"])
+    ///     .clear_rows()
+    ///     .row(vec!["Charlie", "35"]);
+    ///
+    /// // Table now has headers and only Charlie's row
+    /// println!("{}", table.render());
+    /// ```
     pub fn clear_rows(mut self) -> Self {
         self.data = Box::new(StringData::empty());
         self
     }
 
-    /// Sets the style for a cell based on its position (row, column).
+    /// Sets a simple function-based styling function for table cells.
+    ///
+    /// This method accepts a function pointer that determines the style for each
+    /// cell based on its row and column position. The function receives the row
+    /// index (with `HEADER_ROW` for headers) and column index, returning a
+    /// `Style` to apply to that cell.
+    ///
+    /// Using this method will clear any previously set boxed style function.
+    ///
+    /// # Arguments
+    ///
+    /// * `style` - A function that takes `(row: i32, col: usize) -> Style`
+    ///
+    /// # Returns
+    ///
+    /// The `Table` instance with the style function applied, enabling method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_table::{Table, HEADER_ROW, header_row_style};
+    /// use lipgloss::{Style, Color};
+    ///
+    /// // Using a predefined style function
+    /// let table1 = Table::new()
+    ///     .headers(vec!["Name", "Age"])
+    ///     .style_func(header_row_style);
+    ///
+    /// // Using a custom style function
+    /// let custom_style = |row: i32, col: usize| {
+    ///     match (row, col) {
+    ///         (HEADER_ROW, _) => Style::new().bold(true),
+    ///         (_, 0) => Style::new().foreground(Color::from("#00FF00")),
+    ///         _ => Style::new(),
+    ///     }
+    /// };
+    ///
+    /// let table2 = Table::new()
+    ///     .headers(vec!["Status", "Message"])
+    ///     .style_func(custom_style);
+    /// ```
     pub fn style_func(mut self, style: StyleFunc) -> Self {
         self.style_func = style;
         self.boxed_style_func = None; // Clear any boxed style func
         self
     }
 
-    /// Sets a more flexible style function using a boxed closure.
-    /// This allows for more complex styling logic including captured variables.
+    /// Sets a flexible closure-based styling function that can capture variables from its environment.
+    ///
+    /// This method allows for more complex styling logic than `style_func` by accepting
+    /// a closure that can capture variables from the surrounding scope. This is useful
+    /// when your styling logic needs to reference external data, configuration, or state.
+    ///
+    /// The closure is boxed and stored, allowing it to outlive the current scope while
+    /// maintaining access to captured variables.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `F` - A closure type that implements `Fn(i32, usize) -> Style + Send + Sync + 'static`
+    ///
+    /// # Arguments
+    ///
+    /// * `style` - A closure that takes `(row: i32, col: usize) -> Style`
+    ///
+    /// # Returns
+    ///
+    /// The `Table` instance with the boxed style function applied, enabling method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_table::{Table, HEADER_ROW};
+    /// use lipgloss::{Style, Color};
+    ///
+    /// // Capture colors from the environment
+    /// let error_color = Color::from("#FF0000");
+    /// let success_color = Color::from("#00FF00");
+    /// let warning_color = Color::from("#FFAA00");
+    ///
+    /// let mut table = Table::new()
+    ///     .headers(vec!["Status", "Message", "Code"])
+    ///     .row(vec!["Error", "Something failed", "500"])
+    ///     .row(vec!["Success", "All good", "200"])
+    ///     .row(vec!["Warning", "Be careful", "400"])
+    ///     .style_func_boxed(move |row: i32, col: usize| {
+    ///         match (row, col) {
+    ///             (HEADER_ROW, _) => Style::new().bold(true),
+    ///             (_, 0) => {
+    ///                 // Style status column based on content
+    ///                 match row {
+    ///                     0 => Style::new().foreground(error_color.clone()),
+    ///                     1 => Style::new().foreground(success_color.clone()),
+    ///                     2 => Style::new().foreground(warning_color.clone()),
+    ///                     _ => Style::new(),
+    ///                 }
+    ///             }
+    ///             _ => Style::new(),
+    ///         }
+    ///     });
+    ///
+    /// println!("{}", table.render());
+    /// ```
     pub fn style_func_boxed<F>(mut self, style: F) -> Self
     where
         F: Fn(i32, usize) -> Style + Send + Sync + 'static,
@@ -248,7 +763,43 @@ impl Table {
         self
     }
 
-    /// Sets the table headers.
+    /// Sets the column headers for the table.
+    ///
+    /// Headers are displayed at the top of the table and are typically styled
+    /// differently from data rows (e.g., bold text). The number of headers
+    /// determines the number of columns in the table.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `I` - An iterator type that yields items convertible to `String`
+    /// * `S` - A type that can be converted into `String`
+    ///
+    /// # Arguments
+    ///
+    /// * `headers` - An iterable collection of header values (strings, string slices, etc.)
+    ///
+    /// # Returns
+    ///
+    /// The `Table` instance with headers set, enabling method chaining.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_table::Table;
+    ///
+    /// // Using string slices
+    /// let table1 = Table::new()
+    ///     .headers(vec!["Name", "Age", "City"]);
+    ///
+    /// // Using owned strings
+    /// let headers = vec!["ID".to_string(), "Description".to_string()];
+    /// let table2 = Table::new()
+    ///     .headers(headers);
+    ///
+    /// // Using an array
+    /// let table3 = Table::new()
+    ///     .headers(["Product", "Price", "Stock"]);
+    /// ```
     pub fn headers<I, S>(mut self, headers: I) -> Self
     where
         I: IntoIterator<Item = S>,
@@ -318,10 +869,157 @@ impl Table {
         self
     }
 
-    /// Renders the table to a string.
+    /// Renders the table to a complete string representation.
+    ///
+    /// This method performs the final rendering step, calculating layout dimensions,
+    /// applying styles, and constructing the complete table string with borders,
+    /// headers, and data rows. It must be called to generate the visual output.
+    ///
+    /// The rendering process includes:
+    /// - Calculating optimal column widths and row heights
+    /// - Applying cell styles and text wrapping/truncation
+    /// - Constructing borders and separators
+    /// - Handling height constraints and overflow indicators
+    ///
+    /// # Returns
+    ///
+    /// A `String` containing the complete rendered table with ANSI escape sequences
+    /// for styling and proper spacing.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_table::{Table, header_row_style};
+    ///
+    /// let mut table = Table::new()
+    ///     .headers(vec!["Name", "Score"])
+    ///     .row(vec!["Alice", "95"])
+    ///     .row(vec!["Bob", "87"])
+    ///     .style_func(header_row_style);
+    ///
+    /// let output = table.render();
+    /// println!("{}", output);
+    /// ```
+    ///
+    /// ```rust
+    /// use lipgloss_table::Table;
+    ///
+    /// let mut table = Table::new()
+    ///     .headers(vec!["Product", "Description"])
+    ///     .row(vec!["Widget", "A very long description that will wrap"])
+    ///     .width(30);
+    ///
+    /// let output = table.render();
+    /// // Output will be wrapped to fit within 30 characters width
+    /// println!("{}", output);
+    /// ```
     pub fn render(&mut self) -> String {
         self.resize();
         self.construct_table()
+    }
+
+    /// Computes the total height the table will occupy when rendered.
+    ///
+    /// This method calculates the exact number of terminal lines the table will
+    /// use when rendered, including all borders, headers, data rows, and separators.
+    /// It's useful for layout planning, especially when working with height-constrained
+    /// terminals or when implementing scrolling interfaces.
+    ///
+    /// The calculation includes:
+    /// - Top and bottom borders (if enabled)
+    /// - Header row and header separator (if headers exist)
+    /// - All data rows with their calculated heights
+    /// - Row separators between data rows (if enabled)
+    ///
+    /// # Returns
+    ///
+    /// The total height in terminal lines as a `usize`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use lipgloss_table::Table;
+    ///
+    /// let table = Table::new();
+    /// assert_eq!(table.compute_height(), 2); // Just top and bottom borders
+    ///
+    /// let table_with_content = Table::new()
+    ///     .headers(vec!["Name", "Age"])
+    ///     .row(vec!["Alice", "30"]);
+    /// // Height = top border + header + header separator + data row + bottom border
+    /// assert_eq!(table_with_content.compute_height(), 5);
+    /// ```
+    ///
+    /// ```rust
+    /// use lipgloss_table::Table;
+    ///
+    /// let mut large_table = Table::new()
+    ///     .headers(vec!["ID", "Data"])
+    ///     .height(10); // Height constraint
+    ///
+    /// for i in 1..=100 {
+    ///     large_table = large_table.row(vec![i.to_string(), format!("Data {}", i)]);
+    /// }
+    ///
+    /// large_table.render(); // Must render first to populate heights
+    /// let height = large_table.compute_height();
+    /// // compute_height() returns the natural height, not constrained height
+    /// // The actual rendered output will be constrained to 10 lines
+    /// assert!(height > 10); // Natural height is larger than constraint
+    /// ```
+    pub fn compute_height(&self) -> usize {
+        let has_headers = !self.headers.is_empty();
+        let data_rows = self.data.rows();
+
+        // If no rows and no headers, just border height
+        if data_rows == 0 && !has_headers {
+            return if self.border_top && self.border_bottom {
+                2
+            } else if self.border_top || self.border_bottom {
+                1
+            } else {
+                0
+            };
+        }
+
+        let mut total_height = 0;
+
+        // Top border
+        if self.border_top {
+            total_height += 1;
+        }
+
+        // Header row
+        if has_headers {
+            total_height += 1;
+
+            // Header separator
+            if self.border_header {
+                total_height += 1;
+            }
+        }
+
+        // Data rows
+        if data_rows > 0 {
+            // Sum the heights of all data rows
+            let header_offset = if has_headers { 1 } else { 0 };
+            for i in 0..data_rows {
+                let row_height = self.heights.get(i + header_offset).unwrap_or(&1);
+                total_height += row_height;
+
+                // Row separators (between data rows, not after the last one)
+                if self.border_row && i < data_rows - 1 {
+                    total_height += 1;
+                }
+            }
+        }
+
+        // Bottom border
+        if self.border_bottom {
+            total_height += 1;
+        }
+
+        total_height
     }
 
     // Private methods for internal rendering
@@ -862,6 +1560,115 @@ mod tests {
         assert_eq!(table.width, 80);
         assert_eq!(table.height, 10);
         assert!(!table.wrap);
+    }
+
+    #[test]
+    fn test_compute_height_empty_table() {
+        let table = Table::new();
+        assert_eq!(table.compute_height(), 2); // top + bottom border
+
+        let table_no_borders = Table::new().border_top(false).border_bottom(false);
+        assert_eq!(table_no_borders.compute_height(), 0);
+
+        let table_top_only = Table::new().border_bottom(false);
+        assert_eq!(table_top_only.compute_height(), 1);
+
+        let table_bottom_only = Table::new().border_top(false);
+        assert_eq!(table_bottom_only.compute_height(), 1);
+    }
+
+    #[test]
+    fn test_compute_height_headers_only() {
+        let table = Table::new().headers(vec!["Name", "Age"]);
+        // top border + header + header separator + bottom border
+        assert_eq!(table.compute_height(), 4);
+
+        let table_no_header_sep = Table::new()
+            .headers(vec!["Name", "Age"])
+            .border_header(false);
+        // top border + header + bottom border
+        assert_eq!(table_no_header_sep.compute_height(), 3);
+
+        let table_no_borders = Table::new()
+            .headers(vec!["Name", "Age"])
+            .border_top(false)
+            .border_bottom(false)
+            .border_header(false);
+        // just header
+        assert_eq!(table_no_borders.compute_height(), 1);
+    }
+
+    #[test]
+    fn test_compute_height_with_data() {
+        let mut table = Table::new()
+            .headers(vec!["Name", "Age"])
+            .row(vec!["Alice", "30"])
+            .row(vec!["Bob", "25"]);
+
+        // Need to render first to populate heights
+        table.render();
+
+        // top border + header + header separator + 2 data rows + bottom border = 6
+        assert_eq!(table.compute_height(), 6);
+    }
+
+    #[test]
+    fn test_compute_height_with_row_borders() {
+        let mut table = Table::new()
+            .headers(vec!["Name", "Age"])
+            .row(vec!["Alice", "30"])
+            .row(vec!["Bob", "25"])
+            .border_row(true);
+
+        table.render();
+
+        // top border + header + header separator + row1 + row separator + row2 + bottom border = 7
+        assert_eq!(table.compute_height(), 7);
+    }
+
+    #[test]
+    fn test_compute_height_data_only() {
+        let mut table = Table::new().row(vec!["Alice", "30"]).row(vec!["Bob", "25"]);
+
+        table.render();
+
+        // top border + 2 data rows + bottom border = 4
+        assert_eq!(table.compute_height(), 4);
+
+        let mut table_with_row_borders = Table::new()
+            .row(vec!["Alice", "30"])
+            .row(vec!["Bob", "25"])
+            .border_row(true);
+
+        table_with_row_borders.render();
+
+        // top border + row1 + row separator + row2 + bottom border = 5
+        assert_eq!(table_with_row_borders.compute_height(), 5);
+    }
+
+    #[test]
+    fn test_compute_height_single_row() {
+        let mut table = Table::new().headers(vec!["Name"]).row(vec!["Alice"]);
+
+        table.render();
+
+        // top border + header + header separator + 1 data row + bottom border = 5
+        assert_eq!(table.compute_height(), 5);
+    }
+
+    #[test]
+    fn test_compute_height_minimal_borders() {
+        let mut table = Table::new()
+            .headers(vec!["Name", "Age"])
+            .row(vec!["Alice", "30"])
+            .border_top(false)
+            .border_bottom(false)
+            .border_header(false);
+
+        table.render();
+
+        // just header + data row = 2
+        assert_eq!(table.compute_height(), 2);
     }
 
     #[test]

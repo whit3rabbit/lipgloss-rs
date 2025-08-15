@@ -38,7 +38,7 @@ resolver = "2"
 # Shared metadata for all crates in the workspace.
 # Individual crates will inherit these settings.
 [workspace.package]
-version = "0.0.8"
+version = "0.0.9"
 authors = ["whit3rabbit <whiterabbit@protonmail.com>"]
 edition = "2021"
 license = "MIT"
@@ -62,10 +62,10 @@ crossterm = "0.29"
 unicode-width = "0.2.1"
 
 # The core lipgloss crate, which all other components will depend on.
-lipgloss = { path = "./lipgloss", version = "0.0.8" }
-lipgloss-list = { path = "./lipgloss-list", version = "0.0.8" }
-lipgloss-table = { path = "./lipgloss-table", version = "0.0.8" }
-lipgloss-tree = { path = "./lipgloss-tree", version = "0.0.8" }
+lipgloss = { path = "./lipgloss", version = "0.0.9" }
+lipgloss-list = { path = "./lipgloss-list", version = "0.0.9" }
+lipgloss-table = { path = "./lipgloss-table", version = "0.0.9" }
+lipgloss-tree = { path = "./lipgloss-tree", version = "0.0.9" }
 
 
 # --- Dev Dependencies (for examples and tests) ---

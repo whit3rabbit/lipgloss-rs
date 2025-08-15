@@ -13,7 +13,7 @@ For simplicity and to demonstrate the recommended usage, all examples in this do
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.8", features = ["full"] }
+lipgloss-extras = { version = "0.0.9", features = ["full"] }
 ```
 
 ## Table of Contents
@@ -51,10 +51,10 @@ The recommended way to use the library is through the `lipgloss-extras` facade c
 ```toml
 [dependencies]
 # For core functionality + all components
-lipgloss-extras = { version = "0.0.8", features = ["full"] }
+lipgloss-extras = { version = "0.0.9", features = ["full"] }
 
 # Or, pick and choose components
-# lipgloss-extras = { version = "0.0.8", features = ["lists", "tables"] }
+# lipgloss-extras = { version = "0.0.9", features = ["lists", "tables"] }
 ```
 
 The `prelude` module can be used to bring all common items into scope:
@@ -486,9 +486,11 @@ A component for rendering tables with advanced styling and layout options.
 | `.rows(vec![vec![&str]])`     | Sets all data rows.                                             |
 | `.row(vec![&str])`            | Adds a single data row.                                         |
 | `.width(i32)`                | Sets a fixed width for the table (enables wrapping).            |
+| `.height(i32)`               | Sets a fixed height for the table (enables scrolling/truncation). |
 | `.border(Border)`            | Sets the border style.                                          |
 | `.style_func(fn(row, col))`  | Sets a function to style cells dynamically.                     |
 | `.style_func_boxed(closure)` | Sets a styling closure that can capture its environment.        |
+| `.compute_height() -> usize` | Returns the total rendered height including borders and headers. |
 
 ```rust
 use lipgloss_extras::lipgloss::{Style, Color, CENTER};

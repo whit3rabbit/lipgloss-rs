@@ -10,7 +10,7 @@
 //! Example:
 //! ```toml
 //! [dependencies]
-//! lipgloss-extras = { version = "0.0.8", features = ["full"] }
+//! lipgloss-extras = { version = "0.0.9", features = ["full"] }
 //! ```
 //!
 //! ```rust

@@ -14,10 +14,10 @@ Facade crate for the `lipgloss` Rust ecosystem.
 ```toml
 [dependencies]
 # Everything:
-lipgloss-extras = { version = "0.0.8", features = ["full"] }
+lipgloss-extras = { version = "0.0.9", features = ["full"] }
 
 # or cherry-pick:
-# lipgloss-extras = { version = "0.0.8", features = ["lists", "tables"] }
+# lipgloss-extras = { version = "0.0.9", features = ["lists", "tables"] }
 ```
 
 ```rust
