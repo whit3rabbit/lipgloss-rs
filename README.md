@@ -85,7 +85,7 @@ Start with everything (core + extras) — recommended:
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.9", features = ["full"] }
+lipgloss-extras = { version = "0.1.0", features = ["full"] }
 ```
 
 Lipgloss-extras (Lipgloss + Extras) will always bring core package over.
@@ -105,14 +105,14 @@ Pick-and-choose features:
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.9", features = ["lists", "tables"] }
+lipgloss-extras = { version = "0.1.0", features = ["lists", "tables"] }
 ```
 
 Prefer core only? You can depend directly on `lipgloss`:
 
 ```toml
 [dependencies]
-lipgloss = "0.0.9"
+lipgloss = "0.1.0"
 ```
 
 ## Colors
@@ -712,7 +712,7 @@ Prefer a single dependency that re-exports everything? Use `lipgloss-extras`:
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.9", features = ["full"] }
+lipgloss-extras = { version = "0.1.0", features = ["full"] }
 ```
 
 ## Bubbletea Integration

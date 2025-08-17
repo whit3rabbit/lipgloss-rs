@@ -13,7 +13,7 @@ For simplicity and to demonstrate the recommended usage, all examples in this do
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.9", features = ["full"] }
+lipgloss-extras = { version = "0.1.0", features = ["full"] }
 ```
 
 ## Table of Contents
@@ -51,10 +51,10 @@ The recommended way to use the library is through the `lipgloss-extras` facade c
 ```toml
 [dependencies]
 # For core functionality + all components
-lipgloss-extras = { version = "0.0.9", features = ["full"] }
+lipgloss-extras = { version = "0.1.0", features = ["full"] }
 
 # Or, pick and choose components
-# lipgloss-extras = { version = "0.0.9", features = ["lists", "tables"] }
+# lipgloss-extras = { version = "0.1.0", features = ["lists", "tables"] }
 ```
 
 The `prelude` module can be used to bring all common items into scope:

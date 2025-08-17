@@ -14,15 +14,15 @@ Use the batteries-included facade (recommended):
 
 ```toml
 [dependencies]
-lipgloss-extras = { version = "0.0.9", features = ["tables"] }
+lipgloss-extras = { version = "0.1.0", features = ["tables"] }
 ```
 
 Or depend directly on the component (add `lipgloss` for styling):
 
 ```toml
 [dependencies]
-lipgloss-table = "0.0.9"
-lipgloss = "0.0.9"
+lipgloss-table = "0.1.0"
+lipgloss = "0.1.0"
 ```
 
 ### Quick start
