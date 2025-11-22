@@ -533,7 +533,7 @@ fn calculate_median(numbers: &[usize]) -> usize {
     sorted.sort_unstable();
 
     let len = sorted.len();
-    if len % 2 == 0 {
+    if len.is_multiple_of(2) {
         // Even length: average of two middle values
         let h = len / 2;
         (sorted[h - 1] + sorted[h]) / 2
