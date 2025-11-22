@@ -25,7 +25,7 @@ fn main() {
     let data_clone = data.clone();
     let style_func = move |row: i32, col: usize| -> Style {
         let color = Color::from(data_clone[row as usize][col - col % 2].as_str());
-        if col % 2 == 0 {
+        if col.is_multiple_of(2) {
             label_style.clone().foreground(color)
         } else {
             swatch_style.clone().background(color)

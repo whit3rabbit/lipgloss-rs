@@ -106,6 +106,7 @@ use lipgloss_table::{Table, HEADER_ROW};
 /// - Interactive components (lists, tables)
 /// - Complex layouts with proper spacing
 /// - Visual examples of all theming capabilities
+#[allow(unknown_lints, clippy::manual_is_multiple_of)]
 fn main() {
     println!("🎨 Lipgloss Theme Showcase");
     println!("==========================");

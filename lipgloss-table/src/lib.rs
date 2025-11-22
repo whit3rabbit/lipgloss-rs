@@ -246,6 +246,7 @@ pub fn header_row_style(row: i32, _col: usize) -> Style {
 ///
 /// println!("{}", table.render());
 /// ```
+#[allow(unknown_lints, clippy::manual_is_multiple_of)]
 pub fn zebra_style(row: i32, _col: usize) -> Style {
     use lipgloss::color::AdaptiveColor;
     let table_row_even_bg = AdaptiveColor {
@@ -297,6 +298,7 @@ pub fn zebra_style(row: i32, _col: usize) -> Style {
 ///
 /// println!("{}", table.render());
 /// ```
+#[allow(unknown_lints, clippy::manual_is_multiple_of)]
 pub fn minimal_style(row: i32, _col: usize) -> Style {
     use lipgloss::color::AdaptiveColor;
     let table_header_text = AdaptiveColor {
@@ -1807,6 +1809,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(unknown_lints, clippy::manual_is_multiple_of)]
     fn test_cell_styling_with_lipgloss() {
         use lipgloss::{
             color::{STATUS_ERROR, TEXT_MUTED},

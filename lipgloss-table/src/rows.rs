@@ -199,7 +199,7 @@ mod tests {
         ]);
 
         // Filter even rows (0, 2)
-        let filtered = Filter::new(data).filter(|row| row % 2 == 0);
+        let filtered = Filter::new(data).filter(|row| row.is_multiple_of(2));
 
         assert_eq!(filtered.rows(), 2);
         assert_eq!(filtered.columns(), 2);

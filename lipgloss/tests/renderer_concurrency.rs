@@ -50,7 +50,7 @@ fn concurrent_global_default_mutation_and_reads() {
                 if (i + j) % 11 == 0 {
                     // Replace default renderer occasionally
                     let mut r = Renderer::new();
-                    if j % 2 == 0 {
+                    if j.is_multiple_of(2) {
                         r.set_color_profile(ColorProfileKind::TrueColor);
                     } else {
                         r.set_color_profile(ColorProfileKind::NoColor);
@@ -60,7 +60,7 @@ fn concurrent_global_default_mutation_and_reads() {
                 } else if (i + j) % 5 == 0 {
                     // Global setter paths
                     set_has_dark_background(((i + j) % 3) == 0);
-                    set_color_profile(if (i + j) % 2 == 0 {
+                    set_color_profile(if (i + j).is_multiple_of(2) {
                         ColorProfileKind::ANSI
                     } else {
                         ColorProfileKind::ANSI256
